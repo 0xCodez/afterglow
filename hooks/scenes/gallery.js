@@ -582,5 +582,294 @@ function registerTheme(t) {
   })
 })()
 
+;
+// ---- 05-voice-aurora.js
+// 05 Voice Aurora (fable) — a listening glow pooled along the bottom lip of a dark glass panel.
+// Built like a render: silk lobes of light (blurred body + crisp ridge), a white-hot dispersive crest,
+// fanned light shafts (color-dodge, so they only exist where there is light), an edge-lit glass rim, bokeh, grain.
+;(() => {
+  registerTheme({
+    id: 'voice-aurora',
+    title: 'Voice Aurora',
+    window: 'dark',
+    mascot: false,
+    blurb: 'A listening glow pools under dark glass, breathing in silk and prism light.',
+    tags: ['aurora', 'voice', 'glass'],
+    palette: { s0: '#070708', s1: '#141416', s2: '#1C1C20', s3: '#232327', text: '#E8E8EA', text2: '#B6B6BE', muted: '#8A8A94', accent: '#B06BFF', danger: '#FF5C7A', success: '#3FCF8A', warning: '#F2B33D' },
+    glass: { blur: 40, tint: '#141416', opacity: 0.55 },
+    cli: { bg: '#070708', fg: '#E4E4E8', dim: '#6E6E78', claude: '#D97757', accent: '#B06BFF', border: '#2A2A2E', success: '#3FBF7A', error: '#E0457B', warning: '#F2B33D', add: '#0F2A1E', del: '#2E0F1E' },
+    scene: () => {
+      const { W, H, svg, n, rng } = K
+      const R = rng(5052)
+      const P = { x: 16, y: 16, w: W - 32, h: H - 32, r: 60 }
+      const PB = P.y + P.h // panel bottom edge
+      const B = 1002 // lobes are rooted just under the lip
+      const f1 = v => String(Math.round(v))
+
+      // ---- bell-shaped silk lobe: top polyline + closed body
+      const bellPts = (cx, A, s, p) => {
+        const N = 84
+        const out = []
+        for (let i = 0; i <= N; i++) {
+          const x = cx - 2.5 * s + (i * 5 * s) / N
+          const u = Math.abs(x - cx) / s
+          out.push([x, B - A * Math.exp(-Math.pow(u, p))])
+        }
+        return out
+      }
+      const line = pts => 'M' + pts.map(q => `${f1(q[0])},${n(q[1])}`).join('L')
+      const body = pts => `${line(pts)}L${f1(pts[pts.length - 1][0])},${B + 30}L${f1(pts[0][0])},${B + 30}Z`
+
+      const lobes = [
+        { cx: 850, A: 181, s: 215, p: 1.45, c: '#D43CA8', c2: '#8A3FE0', t: '#FFC4EC', px: 7, py: 13, dx: 44, a: 0.74, b: 1.14 },
+        { cx: 1095, A: 142, s: 290, p: 1.6, c: '#7B3FD1', c2: '#3D7BFF', t: '#D5C2FF', px: 11, py: 7, dx: -66, a: 0.78, b: 1.2 },
+        { cx: 600, A: 135, s: 300, p: 1.6, c: '#3D7BFF', c2: '#3FD6E0', t: '#BFD8FF', px: 13, py: 17, dx: 60, a: 0.7, b: 1.16 },
+        { cx: 1335, A: 102, s: 250, p: 1.7, c: '#3FD6E0', c2: '#3FBF7A', t: '#D2FBFF', px: 17, py: 11, dx: -54, a: 0.72, b: 1.3 },
+        { cx: 345, A: 111, s: 240, p: 1.7, c: '#3FBF7A', c2: '#3FD6E0', t: '#CFFFE2', px: 11, py: 13, dx: 48, a: 0.7, b: 1.26 },
+        { cx: 1505, A: 86, s: 165, p: 1.8, c: '#F2B33D', c2: '#D43CA8', t: '#FFE9B8', px: 13, py: 7, dx: -36, a: 0.7, b: 1.3 },
+        { cx: 130, A: 86, s: 170, p: 1.8, c: '#F2B33D', c2: '#D43CA8', t: '#FFE9B8', px: 17, py: 11, dx: 34, a: 0.74, b: 1.22 },
+      ]
+
+      let defs = ''
+      let css = ''
+      let lobeSvg = ''
+      lobes.forEach((L, i) => {
+        const pts = bellPts(L.cx, L.A, L.s, L.p)
+        defs +=
+          `<radialGradient id="v5-lf${i}"><stop offset="0" stop-color="${L.c2}" stop-opacity=".9"/><stop offset=".26" stop-color="${L.c}" stop-opacity=".8"/><stop offset=".52" stop-color="${L.c}" stop-opacity=".46"/><stop offset=".78" stop-color="${L.c}" stop-opacity=".14"/><stop offset="1" stop-color="${L.c}" stop-opacity="0"/></radialGradient>` +
+          `<radialGradient id="v5-lh${i}"><stop offset="0" stop-color="${L.c}" stop-opacity=".5"/><stop offset=".3" stop-color="${L.c}" stop-opacity=".27"/><stop offset=".62" stop-color="${L.c}" stop-opacity=".07"/><stop offset="1" stop-color="${L.c}" stop-opacity="0"/></radialGradient>` +
+          `<linearGradient id="v5-lr${i}"><stop offset=".12" stop-color="${L.t}" stop-opacity="0"/><stop offset=".5" stop-color="${L.t}"/><stop offset=".88" stop-color="${L.t}" stop-opacity="0"/></linearGradient>`
+        lobeSvg +=
+          `<g class="v5-s v5-x${i}"><g class="v5-y${i}">` +
+          `<ellipse cx="${L.cx}" cy="${B}" rx="${f1(L.s * 1.55)}" ry="${f1(L.A * 2.25)}" fill="url(#v5-lh${i})"/>` +
+          `<ellipse cx="${L.cx}" cy="${B}" rx="${f1(L.s * 1.3)}" ry="${f1(L.A * 0.95)}" fill="url(#v5-lf${i})" opacity=".8"/>` +
+          `<ellipse cx="${L.cx}" cy="${B}" rx="${f1(L.s * 0.66)}" ry="${f1(L.A * 1.62)}" fill="url(#v5-lf${i})"/>` +
+          (i < 3 ? [[16, 0.05], [8, 0.08], [3.2, 0.15]].map(([w, o]) => `<path d="${line(pts)}" fill="none" stroke="url(#v5-lr${i})" stroke-width="${w}" opacity="${o}"/>`).join('') : '') +
+          `</g></g>`
+        css +=
+          `.v5-x${i}{animation:v5X${i} ${L.px}s ease-in-out infinite alternate;animation-delay:-${n(R() * L.px)}s}` +
+          `@keyframes v5X${i}{from{transform:translateX(${-L.dx}px)}to{transform:translateX(${L.dx}px)}}` +
+          `.v5-y${i}{transform-origin:${L.cx}px ${B}px;animation:v5Y${i} ${L.py}s cubic-bezier(.45,.05,.35,1) infinite alternate;animation-delay:-${n(R() * L.py)}s}` +
+          `@keyframes v5Y${i}{from{transform:scaleY(${L.a})}to{transform:scaleY(${L.b})}}`
+      })
+
+      // ---- far plane: tall, dim colour columns (cheap radial gradients)
+      const cols = [
+        { cx: 880, A: 330, s: 250, c: '#C2389A', px: 19, py: 4, dx: 50 },
+        { cx: 520, A: 250, s: 270, c: '#2FA772', px: 23, py: 17, dx: -60 },
+        { cx: 1230, A: 270, s: 280, c: '#7040E0', px: 17, py: 13, dx: 66 },
+        { cx: 1500, A: 200, s: 230, c: '#2F74F0', px: 13, py: 19, dx: -40 },
+        { cx: 190, A: 190, s: 240, c: '#B8478F', px: 29, py: 11, dx: 40 },
+      ]
+      let colSvg = ''
+      cols.forEach((L, i) => {
+        defs += `<radialGradient id="v5-ch${i}"><stop offset="0" stop-color="${L.c}" stop-opacity=".95"/><stop offset=".3" stop-color="${L.c}" stop-opacity=".68"/><stop offset=".56" stop-color="${L.c}" stop-opacity=".34"/><stop offset=".8" stop-color="${L.c}" stop-opacity=".1"/><stop offset="1" stop-color="${L.c}" stop-opacity="0"/></radialGradient>`
+        colSvg += `<g class="v5-s v5-cx${i}"><ellipse class="v5-cy${i}" cx="${L.cx}" cy="${B}" rx="${f1(L.s * 1.5)}" ry="${f1(L.A * 1.08)}" fill="url(#v5-ch${i})"/></g>`
+        css +=
+          `.v5-cx${i}{animation:v5CX${i} ${L.px}s ease-in-out infinite alternate;animation-delay:-${n(R() * L.px)}s}` +
+          `@keyframes v5CX${i}{from{transform:translateX(${-L.dx}px)}to{transform:translateX(${L.dx}px)}}` +
+          `.v5-cy${i}{transform-origin:${L.cx}px ${B}px;animation:v5CY${i} ${L.py}s ease-in-out infinite alternate;animation-delay:-${n(R() * L.py)}s}` +
+          `@keyframes v5CY${i}{from{transform:scaleY(.78);opacity:.7}to{transform:scaleY(1.12);opacity:1}}`
+      })
+
+      // ---- the listening crest (white-hot, dispersive)
+      const CX = 880
+      const cPts = bellPts(CX, 172, 400, 1.5)
+      const cLine = line(cPts)
+      const cBody = body(cPts)
+
+      // ---- fanned light shafts
+      const OX = 880
+      const OY = 2700
+      const fan = (count, seedShift) => {
+        let s = ''
+        for (let i = 0; i < count; i++) {
+          const th = (R() * 2 - 1) * 25 + seedShift
+          const wide = R() < 0.28
+          const w = wide ? 18 + R() * 60 : 1.2 + R() * 6
+          const fall = 1 - 0.55 * Math.pow(Math.abs(th) / 25, 1.4)
+          const len = (wide ? 170 + R() * 230 : 100 + R() * 300) * fall
+          const rad = (OY - PB) / Math.cos((th * Math.PI) / 180)
+          const op = wide ? 0.07 + R() * 0.13 : 0.2 + R() * 0.5
+          const xb = OX + (OY - PB) * Math.tan((th * Math.PI) / 180)
+          const hue = xb < 290 ? 0 : xb < 540 ? 1 : xb < 740 ? 2 : xb < 1010 ? 3 : xb < 1240 ? 4 : xb < 1440 ? 5 : 0
+          s += `<rect x="${n(-w / 2)}" y="${f1(-rad - len)}" width="${n(w)}" height="${f1(len + 60)}" transform="translate(${OX} ${OY}) rotate(${n(th)})" opacity="${n(op)}" fill="url(#v5-ry${hue})"/>`
+        }
+        return s
+      }
+
+      // ---- motes + bokeh
+      let motes = ''
+      for (let i = 0; i < 26; i++) {
+        const x = 370 + R() * 1150
+        const d = 6 + R() * 9
+        const rise = 60 + R() * 150
+        const tint = ['#fff', '#FFD3F1', '#CFE4FF', '#D2FBFF'][i % 4]
+        motes += `<circle class="v5-m" cx="${f1(x)}" cy="${f1(948 + R() * 30)}" r="${n(0.7 + R() * 1.3)}" fill="${tint}" style="animation-duration:${n(d)}s;animation-delay:-${n(R() * d)}s;--v5r:-${f1(rise)}px;--v5d:${f1((R() * 2 - 1) * 26)}px"/>`
+      }
+      const bk = [
+        [1420, 890, 26, '#3FD6E0', 0.13, 31], [1340, 925, 13, '#F2B33D', 0.2, 23], [1530, 830, 12, '#7B3FD1', 0.14, 37],
+        [430, 905, 22, '#3FBF7A', 0.13, 29], [540, 870, 10, '#3D7BFF', 0.16, 41], [1180, 915, 11, '#FFB9E6', 0.18, 19],
+        [705, 925, 9, '#BFD8FF', 0.18, 27],
+      ]
+      let bokeh = ''
+      bk.forEach((b, i) => {
+        defs += `<radialGradient id="v5-bk${i}"><stop offset="0" stop-color="${b[3]}" stop-opacity=".5"/><stop offset=".6" stop-color="${b[3]}" stop-opacity=".55"/><stop offset=".85" stop-color="${b[3]}" stop-opacity=".7"/><stop offset="1" stop-color="${b[3]}" stop-opacity="0"/></radialGradient>`
+        bokeh += `<circle class="v5-bk" cx="${b[0]}" cy="${b[1]}" r="${b[2]}" fill="url(#v5-bk${i})" opacity="${b[4]}" style="animation-duration:${b[5]}s;animation-delay:-${n(R() * b[5])}s"/>`
+      })
+
+      // ---- waveform bars
+      let bars = ''
+      for (let i = 0; i < 11; i++) {
+        const h = 5 + Math.pow(Math.sin(((i + 0.5) / 11) * Math.PI), 1.4) * 17
+        const d = 0.55 + ((i * 7) % 6) * 0.12
+        bars += `<rect class="v5-b" x="${n(1474 + i * 6.6)}" y="${n(922 - h / 2)}" width="2.8" height="${n(h)}" rx="1.4" style="animation-duration:${n(d)}s;animation-delay:-${n(R() * 2)}s"/>`
+      }
+
+      const rimD = `M${P.x},600V${PB - P.r}a${P.r},${P.r} 0 0 0 ${P.r},${P.r}H${P.x + P.w - P.r}a${P.r},${P.r} 0 0 0 ${P.r},${-P.r}V600`
+      const rimIn = `M${P.x + 7},600V${PB - P.r}a${P.r - 7},${P.r - 7} 0 0 0 ${P.r - 7},${P.r - 7}H${P.x + P.w - P.r}a${P.r - 7},${P.r - 7} 0 0 0 ${P.r - 7},${-(P.r - 7)}V600`
+      const topD = `M${P.x},330V${P.y + P.r}a${P.r},${P.r} 0 0 1 ${P.r},${-P.r}H${P.x + P.w - P.r}a${P.r},${P.r} 0 0 1 ${P.r},${P.r}V330`
+      const rainbow = (id, cols) =>
+        `<linearGradient id="${id}" gradientUnits="userSpaceOnUse" x1="${P.x}" y1="0" x2="${P.x + P.w}" y2="0">` +
+        cols.map((c, i) => `<stop offset="${(i / (cols.length - 1)).toFixed(3)}" stop-color="${c}"/>`).join('') +
+        `</linearGradient>`
+
+      defs +=
+        rainbow('v5-rb1', ['#F2B33D', '#3FBF7A', '#3FD6E0', '#3D7BFF', '#9A5BFF', '#FF8FDC', '#FFF1FA', '#FF8FDC', '#7B3FD1', '#3D7BFF', '#3FD6E0', '#F2B33D']) +
+        rainbow('v5-rb2', ['#D43CA8', '#F2B33D', '#3FBF7A', '#3FD6E0', '#3D7BFF', '#C9B8FF', '#FFFFFF', '#9FE8FF', '#3FBF7A', '#F2B33D', '#D43CA8', '#7B3FD1']) +
+        `<linearGradient id="v5-rmf" gradientUnits="userSpaceOnUse" x1="0" y1="740" x2="0" y2="${PB}"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".16"/><stop offset=".82" stop-color="#fff" stop-opacity=".7"/><stop offset="1" stop-color="#fff"/></linearGradient>` +
+        `<mask id="v5-rmm" maskUnits="userSpaceOnUse" x="0" y="580" width="${W}" height="440"><rect y="580" width="${W}" height="440" fill="url(#v5-rmf)"/></mask>` +
+        `<linearGradient id="v5-tpf" gradientUnits="userSpaceOnUse" x1="0" y1="${P.y}" x2="0" y2="330"><stop offset="0" stop-color="#fff"/><stop offset=".2" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>` +
+        `<mask id="v5-tpm" maskUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="340"><rect width="${W}" height="340" fill="url(#v5-tpf)"/></mask>` +
+        `<linearGradient id="v5-pn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0E0E11"/><stop offset=".45" stop-color="#0A0A0C"/><stop offset="1" stop-color="#09090C"/></linearGradient>` +
+        `<linearGradient id="v5-hl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3C3C44"/><stop offset=".3" stop-color="#232327"/><stop offset="1" stop-color="#1B1B1F"/></linearGradient>` +
+        `<radialGradient id="v5-vg" cx=".5" cy=".46" r=".8"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".6"/></radialGradient>` +
+        ['#FFD27A', '#7CF0AE', '#7FB6FF', '#FF9FE0', '#B79BFF', '#8FF0F6'].map((c, i) => `<linearGradient id="v5-ry${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c}" stop-opacity="0"/><stop offset=".45" stop-color="${c}" stop-opacity=".14"/><stop offset=".8" stop-color="${c}" stop-opacity=".6"/><stop offset="1" stop-color="#fff"/></linearGradient>`).join('') +
+        `<linearGradient id="v5-cr" gradientUnits="userSpaceOnUse" x1="${CX - 760}" y1="0" x2="${CX + 760}" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".22" stop-color="#fff" stop-opacity=".5"/><stop offset=".4" stop-color="#fff"/><stop offset=".6" stop-color="#fff"/><stop offset=".78" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>` +
+        `<mask id="v5-crm" maskUnits="userSpaceOnUse" x="-100" y="700" width="1900" height="340"><rect x="-100" y="700" width="1900" height="340" fill="url(#v5-cr)"/></mask>` +
+        `<radialGradient id="v5-hot"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".25" stop-color="#FFE6F7" stop-opacity=".55"/><stop offset=".6" stop-color="#FF8FDC" stop-opacity=".16"/><stop offset="1" stop-color="#FF8FDC" stop-opacity="0"/></radialGradient>` +
+        `<radialGradient id="v5-fl"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="#EAF6FF" stop-opacity=".5"/><stop offset=".6" stop-color="#9FD8FF" stop-opacity=".12"/><stop offset="1" stop-color="#9FD8FF" stop-opacity="0"/></radialGradient>` +
+        `<clipPath id="v5-crc"><path d="${cBody}"/></clipPath>` +
+        `<linearGradient id="v5-bg" gradientUnits="userSpaceOnUse" x1="1474" y1="0" x2="1544" y2="0"><stop offset="0" stop-color="#FF8FDC"/><stop offset=".5" stop-color="#F4F0FF"/><stop offset="1" stop-color="#5FE0EA"/></linearGradient>` +
+        `<linearGradient id="v5-pl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".34"/><stop offset=".5" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#fff" stop-opacity=".2"/></linearGradient>` +
+        `<clipPath id="v5-cp"><rect x="${P.x}" y="${P.y}" width="${P.w}" height="${P.h}" rx="${P.r}"/></clipPath>` +
+        `<radialGradient id="v5-gf"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".12" stop-color="#FFE1F5" stop-opacity=".5"/><stop offset=".4" stop-color="#C48BFF" stop-opacity=".16"/><stop offset="1" stop-color="#7FB6FF" stop-opacity="0"/></radialGradient>` +
+        `<filter id="v5-b5" filterUnits="userSpaceOnUse" x="-100" y="716" width="1800" height="324"><feGaussianBlur stdDeviation="5"/></filter>` +
+        `<filter id="v5-bt" filterUnits="userSpaceOnUse" x="-40" y="-40" width="1680" height="420"><feGaussianBlur stdDeviation="7"/></filter>` +
+        `<filter id="v5-gr" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".82" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.5 0 0 0 -.64"/></filter>` +
+        `<filter id="v5-go" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.05" numOctaves="2" seed="7" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 1.7 0 0 -.7"/></filter>`
+
+      const style =
+        `.v5-s{mix-blend-mode:screen}` +
+        // whole pool: slow surge "moment"
+        `.v5-pool{transform-origin:800px ${B}px;animation:v5Surge 23s ease-in-out infinite;animation-delay:-9s}` +
+        `@keyframes v5Surge{0%,52%,100%{transform:scaleY(1);opacity:.92}60%{transform:scaleY(1.1);opacity:1}68%{transform:scaleY(.98);opacity:.95}74%{transform:scaleY(1.04);opacity:1}}` +
+        // crest
+        `.v5-cd{animation:v5Cd 29s ease-in-out infinite alternate;animation-delay:-11s}@keyframes v5Cd{from{transform:translateX(-70px)}to{transform:translateX(80px)}}` +
+        `.v5-cb{transform-origin:${CX}px ${B}px;animation:v5Listen 4s cubic-bezier(.4,0,.3,1) infinite;animation-delay:-1.3s}` +
+        `@keyframes v5Listen{0%,100%{transform:scaleY(.7);opacity:.72}34%{transform:scaleY(1.14);opacity:1}50%{transform:scaleY(.98);opacity:.9}64%{transform:scaleY(1.07);opacity:.97}}` +
+        `.v5-hs{transform-box:fill-box;transform-origin:50% 50%;animation:v5Hs 4s cubic-bezier(.4,0,.3,1) infinite;animation-delay:-1.3s}@keyframes v5Hs{0%,100%{opacity:.35;transform:scaleX(.6)}34%{opacity:1;transform:scaleX(1.08)}50%{opacity:.7;transform:scaleX(.9)}64%{opacity:.9;transform:scaleX(1)}}` +
+        // shafts
+        `.v5-ra,.v5-rb{transform-origin:${OX}px ${OY}px;mix-blend-mode:screen}` +
+        `.v5-ra{animation:v5Ra 13s ease-in-out infinite alternate;animation-delay:-5s}@keyframes v5Ra{from{transform:rotate(-1.3deg);opacity:.75}to{transform:rotate(1.2deg);opacity:1}}` +
+        `.v5-rb{animation:v5Rb 17s ease-in-out infinite alternate;animation-delay:-12s}@keyframes v5Rb{from{transform:rotate(1.5deg);opacity:1}to{transform:rotate(-1.1deg);opacity:.6}}` +
+        // motes & bokeh
+        `.v5-m{opacity:0;animation:v5Mote linear infinite}@keyframes v5Mote{0%{transform:translate(0,0);opacity:0}12%{opacity:.9}45%{opacity:.35}60%{opacity:.8}100%{transform:translate(var(--v5d),var(--v5r));opacity:0}}` +
+        `.v5-bk{mix-blend-mode:screen;animation:v5Bk ease-in-out infinite alternate}@keyframes v5Bk{from{transform:translate(-14px,10px)}to{transform:translate(18px,-16px)}}` +
+        // rim
+        `.v5-r1{animation:v5R1 11s ease-in-out infinite alternate;animation-delay:-3s}@keyframes v5R1{from{opacity:1}to{opacity:.15}}` +
+        `.v5-r2{animation:v5R2 11s ease-in-out infinite alternate;animation-delay:-3s}@keyframes v5R2{from{opacity:.1}to{opacity:1}}` +
+        `.v5-rp{animation:v5Rp 4s cubic-bezier(.4,0,.3,1) infinite;animation-delay:-1.3s}@keyframes v5Rp{0%,100%{opacity:.62}34%{opacity:1}50%{opacity:.82}64%{opacity:.95}}` +
+        `.v5-gl{animation:19s cubic-bezier(.5,0,.3,1) infinite;animation-delay:-9s}` +
+        `.v5-gh{offset-rotate:0deg;animation:v5Gh 19s cubic-bezier(.5,0,.3,1) infinite;animation-delay:-9s}` +
+        `@keyframes v5Gh{0%{offset-distance:0%;opacity:0}3%{opacity:1}24%{opacity:1}28%,100%{offset-distance:100%;opacity:0}}` +
+        // top
+        `.v5-tp{animation:v5Tp 31s ease-in-out infinite alternate;animation-delay:-8s}@keyframes v5Tp{from{transform:translateX(110px);opacity:.75}to{transform:translateX(-130px);opacity:1}}` +
+        // hud
+        `.v5-b{fill:url(#v5-bg);transform-box:fill-box;transform-origin:50% 50%;animation:v5Bar ease-in-out infinite alternate}@keyframes v5Bar{from{transform:scaleY(.2)}to{transform:scaleY(1)}}` +
+        `.v5-dot{transform-box:fill-box;transform-origin:50% 50%;animation:v5Dot 2s ease-in-out infinite;animation-delay:-.6s}@keyframes v5Dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}` +
+        `.v5-halo{transform-box:fill-box;transform-origin:50% 50%;animation:v5Halo 2s ease-out infinite;animation-delay:-.6s}@keyframes v5Halo{0%{opacity:.5;transform:scale(.5)}100%{opacity:0;transform:scale(1.6)}}` +
+        `.v5-lab{font:600 9.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.28em;fill:#9A9AA6}` +
+        css
+
+      const crest =
+        `<g class="v5-s v5-cd"><g class="v5-cb" mask="url(#v5-crm)">` +
+        `<g filter="url(#v5-b5)" fill="none">` +
+        // luminous sheet just under the ridge
+        `<g clip-path="url(#v5-crc)" stroke="#F3ECFF"><path d="${cLine}" stroke-width="84" opacity=".1"/><path d="${cLine}" stroke-width="52" opacity=".13"/><path d="${cLine}" stroke-width="26" opacity=".16"/></g>` +
+        // halo above (stacked strokes, softened by the one shared blur)
+        [[104, 0.05], [80, 0.06], [60, 0.08], [44, 0.1], [30, 0.14], [18, 0.2]].map(([w, o]) => `<path d="${cLine}" stroke="#FF6FD0" stroke-width="${w}" opacity="${o}"/>`).join('') +
+        // dispersion fringes
+        `<path d="${cLine}" stroke="#FF4FB4" stroke-width="10" transform="translate(0 -8)"/><path d="${cLine}" stroke="#39E6F0" stroke-width="10" transform="translate(0 10)" opacity=".9"/><path d="${cLine}" stroke="#fff" stroke-width="8"/></g>` +
+        `<path d="${cLine}" fill="none" stroke="#fff" stroke-width="5.5" opacity=".3"/><path d="${cLine}" fill="none" stroke="#fff" stroke-width="2.2"/>` +
+        `<ellipse class="v5-hs" cx="${CX}" cy="${B - 166}" rx="170" ry="50" fill="url(#v5-hot)"/>` +
+        `<ellipse class="v5-hs" cx="${CX}" cy="${B - 168}" rx="340" ry="7" fill="url(#v5-fl)" opacity=".6"/>` +
+        `</g></g>`
+
+      const glow = id => [[34, 0.06], [22, 0.1], [13, 0.17], [7, 0.3], [3.4, 1]].map(([w, o]) => `<path d="${rimD}" stroke="url(#${id})" stroke-width="${w}" opacity="${o}"/>`).join('')
+      // comet: nested dashes sharing one head, cool tail -> pink -> white-hot tip
+      const RL = 2284.5
+      const comet = [[620, 4, '#BFF6FF', 0.16], [450, 5, '#CFE0FF', 0.24], [300, 6, '#E2D4FF', 0.34], [180, 7, '#FFD6F2', 0.46], [92, 7, '#fff', 0.55], [32, 5.5, '#fff', 0.95], [240, 18, '#9FB8FF', 0.08], [130, 26, '#FF9FE0', 0.1], [40, 16, '#fff', 0.22]]
+      let cometSvg = ''
+      comet.forEach(([L, w, c, o], i) => {
+        cometSvg += `<path class="v5-gl v5-gl${i}" d="${rimD}" stroke="${c}" stroke-width="${w}" stroke-opacity="${o}" stroke-dasharray="${L} 4000"/>`
+        css += `.v5-gl${i}{animation-name:v5Gl${i}}@keyframes v5Gl${i}{0%{stroke-dashoffset:${L};opacity:0}3%{opacity:1}24%{opacity:1}28%,100%{stroke-dashoffset:${n(L - RL)};opacity:0}}`
+      })
+      const rim =
+        // edge-lit glass lip: stacked glow, hairline, inner refraction line
+        `<g mask="url(#v5-rmm)" class="v5-rp" fill="none">` +
+        `<g class="v5-r1">${glow('v5-rb1')}</g>` +
+        `<g class="v5-r2">${glow('v5-rb2')}</g>` +
+        `<path d="${rimD}" stroke="#fff" stroke-width="1.1" opacity=".8"/>` +
+        `<path d="${rimIn}" stroke="url(#v5-rb2)" stroke-width="1" opacity=".5"/>` +
+        `</g>` +
+        `<g mask="url(#v5-rmm)" fill="none" stroke-linecap="round" style="mix-blend-mode:screen">${cometSvg}` +
+        `<g class="v5-gh" style="offset-path:path('${rimD}')"><circle r="46" fill="url(#v5-gf)"/><ellipse rx="92" ry="2.2" fill="url(#v5-fl)"/><ellipse rx="2" ry="30" fill="url(#v5-fl)" opacity=".8"/><circle r="3" fill="#fff"/></g></g>`
+
+      const top =
+        `<g opacity=".62"><g class="v5-tp v5-s">` +
+        `<ellipse cx="500" cy="${P.y - 8}" rx="480" ry="150" fill="url(#v5-lh2)"/><ellipse cx="930" cy="${P.y - 8}" rx="440" ry="128" fill="url(#v5-lh0)"/><ellipse cx="1330" cy="${P.y - 8}" rx="420" ry="142" fill="url(#v5-lh1)"/>` +
+        `<ellipse cx="240" cy="${P.y - 8}" rx="300" ry="96" fill="url(#v5-lh4)"/><ellipse cx="1540" cy="${P.y - 8}" rx="260" ry="90" fill="url(#v5-lh3)"/>` +
+        `</g>` +
+        // the crest's echo: a hot sliver that answers the listening pulse
+        `<g class="v5-s v5-cd"><ellipse class="v5-hs" cx="${CX}" cy="${P.y}" rx="380" ry="46" fill="url(#v5-hot)" opacity=".34"/><ellipse class="v5-hs" cx="${CX}" cy="${P.y + 1}" rx="460" ry="3" fill="url(#v5-fl)" opacity=".4"/></g>` +
+        `</g>`
+      const topRim =
+        `<g mask="url(#v5-tpm)" fill="none" class="v5-rp"><path d="${topD}" stroke="url(#v5-rb2)" stroke-width="14" filter="url(#v5-bt)" opacity=".55"/><path d="${topD}" stroke="url(#v5-rb1)" stroke-width="2.6" opacity=".5"/><path d="${topD}" stroke="#fff" stroke-width="1" opacity=".5"/></g>`
+
+      const hud =
+        `<g>` +
+        `<rect x="1460" y="901" width="98" height="42" rx="21" fill="#0B0B0E" fill-opacity=".62"/>` +
+        `<rect x="1460.5" y="901.5" width="97" height="41" rx="20.5" fill="none" stroke="url(#v5-pl)"/>` +
+        bars +
+        `<circle class="v5-halo" cx="1470" cy="882.5" r="8" fill="#B06BFF"/><circle class="v5-dot" cx="1470" cy="882.5" r="2.6" fill="#C48BFF"/>` +
+        `<text class="v5-lab" x="1480" y="886">LISTENING</text>` +
+        `</g>`
+
+      const bodySvg =
+        `<defs>${defs}</defs>` +
+        `<rect width="${W}" height="${H}" fill="#050506"/>` +
+        `<rect x="${P.x}" y="${P.y}" width="${P.w}" height="${P.h}" rx="${P.r}" fill="url(#v5-pn)"/>` +
+        `<g clip-path="url(#v5-cp)">` +
+        top +
+        `<g>${colSvg}</g><g class="v5-pool">${lobeSvg}</g>` +
+        crest +
+        `<g class="v5-ra">${fan(34, 0)}</g><g class="v5-rb">${fan(28, 0.7)}</g>` +
+        bokeh +
+        `<g class="v5-s">${motes}</g>` +
+        `<rect y="700" width="${W}" height="300" filter="url(#v5-go)" opacity=".2"/>` +
+        `<rect width="${W}" height="${H}" fill="url(#v5-vg)"/>` +
+        `</g>` +
+        `<rect x="${P.x + 0.5}" y="${P.y + 0.5}" width="${P.w - 1}" height="${P.h - 1}" rx="${P.r}" fill="none" stroke="url(#v5-hl)"/>` +
+        topRim +
+        rim +
+        hud +
+        `<rect width="${W}" height="${H}" filter="url(#v5-gr)" opacity=".055"/>`
+
+      return svg(style, bodySvg)
+    },
+  })
+})()
+
 ;return THEMES
 })()

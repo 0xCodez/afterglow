@@ -1,6 +1,6 @@
 {
   "name": "afterglow",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "license": "MIT",
   "description": "Living backdrops for Claude Code on desktop: each theme repaints the app, frosts its panels and plays a hand-built animated scene behind the chat. /afterglow lists them, /afterglow <name> applies one."
 }
