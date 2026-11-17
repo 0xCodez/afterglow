@@ -1,0 +1,5 @@
+{
+  "name": "afterglow",
+  "owner": { "name": "0xCodez" },
+  "plugins": [{ "name": "afterglow", "source": "./" }]
+}

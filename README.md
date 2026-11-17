@@ -1,0 +1,46 @@
+# Afterglow
+
+Living backdrops for Claude Code on desktop. Each Afterglow theme repaints the whole app, frosts its
+panels like glass and plays a hand-built animated scene behind the chat. Every scene is a single SVG
+animated by its own CSS: no scripts, nothing loaded from the network, and it rests in a composed still
+picture when your system asks for reduced motion.
+
+This is an early preview with one theme:
+
+- **Spec Sheet** (`spec-sheet`, dark): a cyanotype blueprint where a watercolour ticket stub swings on a
+  visibly underdamped spring, with live engineering notes and dimension lines around it.
+
+More themes from the Afterglow gallery will follow.
+
+## Install
+
+At the prompt of a Claude Code terminal session:
+
+```
+/plugin install afterglow --marketplace 0xCodez/afterglow
+```
+
+Answer `y` to add the marketplace, then pick a scope (user scope makes it available in every session).
+
+From a shell:
+
+```
+claude plugin install afterglow --marketplace 0xCodez/afterglow
+```
+
+In the desktop app, where `/plugin` does not run: click **+** next to the prompt box, then **Plugins**,
+**Add marketplace** with `0xCodez/afterglow`, then **Add plugin**.
+
+## Use
+
+- `/afterglow` or `/afterglow list` lists the themes.
+- `/afterglow spec-sheet` applies one. Your choice is remembered across sessions.
+- `/afterglow random` picks one at random.
+- `/afterglow off` clears the theme.
+
+Themes draw in the Claude Code desktop and mobile apps. The terminal and editors draw no backdrop, so
+the command only saves your choice there.
+
+## License
+
+MIT, see LICENSE.
