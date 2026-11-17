@@ -5,12 +5,15 @@ panels like glass and plays a hand-built animated scene behind the chat. Every s
 animated by its own CSS: no scripts, nothing loaded from the network, and it rests in a composed still
 picture when your system asks for reduced motion.
 
-This is an early preview with two themes:
+This is an early preview with three themes:
 
 - **Spec Sheet** (`spec-sheet`, dark): a cyanotype blueprint where a watercolour ticket stub swings on a
   visibly underdamped spring, with live engineering notes and dimension lines around it.
 - **Voice Aurora** (`voice-aurora`, dark): a listening glow pools under dark glass at the foot of the
   window, breathing in silk and prism light, with a prismatic comet running along the glass rim.
+- **Glyph Reef** (`glyph-reef`, dark): a black reef where a leopard shark, a hammerhead and a manta, all set
+  in flickering glyph tiles, lap the edges of the window; an orange critter made of type peeks out of its
+  diving bubble.
 
 More themes from the Afterglow gallery will follow.
 
@@ -36,7 +39,7 @@ In the desktop app, where `/plugin` does not run: click **+** next to the prompt
 ## Use
 
 - `/afterglow` or `/afterglow list` lists the themes.
-- `/afterglow spec-sheet` or `/afterglow voice-aurora` applies one. Your choice is remembered across sessions.
+- `/afterglow <name>` applies one, for example `/afterglow glyph-reef`. Your choice is remembered across sessions.
 - `/afterglow random` picks one at random.
 - `/afterglow off` clears the theme.
 

@@ -871,5 +871,428 @@ function registerTheme(t) {
   })
 })()
 
+;
+// ---- 03-glyph-reef.js
+// 03 Glyph Reef — creatures made of type. Style: glyph-tile mosaic (every form is a grid of little
+// squares holding a mono glyph, tiles shrink toward the silhouette), phosphor on black water.
+;(() => {
+  const { W, H, svg, rng, n } = K
+  const C = 12
+  const NEU = ['#191919', '#242424', '#313130', '#42423f', '#595853', '#7b786f', '#aaa594', '#e8e2cf']
+  const SLA = ['#15171d', '#1e222c', '#2a3040', '#3a4358', '#525d78', '#727f9e', '#9da8c4', '#dfe4f2']
+  const MAN = ['#121816', '#1a2521', '#25352e', '#33493f', '#486255', '#688576', '#a3bdad', '#e6efe2']
+  const SEA = ['#0d1010', '#141919', '#1c2323', '#273130', '#364341', '#4d5c58', '#72817b', '#b3bdb3']
+  const RUST = ['#30130d', '#4d1e14', '#6e2b1c', '#8f3b27', '#b04a33', '#d0684a', '#e99a7b', '#f7d6c2']
+  const VIO = ['#17142f', '#231f4b', '#342e70', '#4a4196', '#6b5fd0', '#8b7fe0', '#b5acf2', '#e0dcfc']
+  const KLP = ['#0c1a12', '#11261a', '#183523', '#21482f', '#2d5f3e', '#3e8e5a', '#63b07d', '#a5d9b5']
+  const ORA = ['#7a3622', '#96452c', '#b35538', '#c96646', '#d97757', '#e58a69', '#f0a283', '#fbc6ad']
+  const GL = [':.-', ':.o', 'o:+', 'ot=', 'tSX', 'SX%', '%8@', '8@#']
+  const ACC = ['#6b5fd0', '#3e8e5a', '#c0503a']
+  const clamp = (v, a, b) => (v < a ? a : v > b ? b : v)
+  const inPoly = (x, y, p) => {
+    let c = false
+    for (let i = 0, j = p.length - 1; i < p.length; j = i++) {
+      const [xi, yi] = p[i]
+      const [xj, yj] = p[j]
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c
+    }
+    return c
+  }
+  const mirror = p => p.map(([x, y]) => [x, -y])
+
+  /** Rasterises an implicit shape onto the cell grid: coverage (for tile size) + tone + part. */
+  function raster(inside, tone, bb, cell = C) {
+    const out = []
+    const o = [-0.34, 0, 0.34]
+    for (let cy = Math.ceil(bb[1] / cell) * cell; cy <= bb[3]; cy += cell)
+      for (let cx = Math.ceil(bb[0] / cell) * cell; cx <= bb[2]; cx += cell) {
+        let c = 0
+        let part = 0
+        for (const dy of o)
+          for (const dx of o) {
+            const p = inside(cx + dx * cell, cy + dy * cell)
+            if (p) {
+              c++
+              if (!part || (dx === 0 && dy === 0)) part = p
+            }
+          }
+        if (c) out.push({ x: cx, y: cy, cov: c / 9, part, tone: tone(cx, cy, part) })
+      }
+    return out
+  }
+
+  /** Tiles → SVG: one path per colour, glyphs as x/y-list <text>, optional flicker layers. */
+  function emit(ts, o) {
+    const { ox = 0, oy = 0, ramp, R, cell = C, glyph = true, fl = false, accP = 0, fs = '' } = o
+    const T = cell - 1
+    const paths = {}
+    const tx = {}
+    const put = (k, x, y, g) => {
+      const e = (tx[k] ||= { x: [], y: [], g: '' })
+      e.x.push(n(x))
+      e.y.push(n(y))
+      e.g += g
+    }
+    for (const t of ts) {
+      let s = t.cov > 0.8 ? T : t.cov > 0.56 ? T * 0.72 : t.cov > 0.34 ? T * 0.5 : t.cov > 0.12 ? T * 0.3 : 0
+      s = Math.round(s)
+      if (!s) continue
+      const idx = clamp(Math.floor(t.tone * 8), 0, 7)
+      let col = (t.ramp || ramp)[idx]
+      let dark = idx >= 5
+      if (accP && s === T && R() < accP) {
+        col = ACC[Math.floor(R() * 3)]
+        dark = false
+      }
+      ;(paths[col] ||= []).push(`M${n(t.x - ox - s / 2)} ${n(t.y - oy - s / 2)}h${s}v${s}h-${s}z`)
+      if (glyph && s === T && !t.ng) {
+        const r = fl ? R() : 0
+        const set = r < 0.52 ? 's' : r < 0.77 ? 'a' : 'b'
+        const k = dark ? 'd' : 'l'
+        const pick = i => GL[i][Math.floor(R() * 3)]
+        put(set + k, t.x - ox, t.y - oy + cell * 0.28, t.g || pick(idx))
+        if (set !== 's') put(set + '2' + k, t.x - ox, t.y - oy + cell * 0.28, pick(clamp(idx + (R() < 0.5 ? 1 : -1), 0, 7)))
+      }
+    }
+    let s = ''
+    for (const c in paths) s += `<path fill="${c}" d="${paths[c].join('')}"/>`
+    const cls = { s: '', a: ' gr-fa', a2: ' gr-fb', b: ' gr-ga', b2: ' gr-gb' }
+    for (const k in tx) {
+      const e = tx[k]
+      const set = k.slice(0, -1)
+      const st = set === 's' ? '' : ` style="animation-delay:-${n((o.d || 0) + (set[0] === 'a' ? 0 : 0.7))}s"`
+      s += `<text class="gr-t${fs} gr-${k.slice(-1)}${cls[set]}"${st} x="${e.x.join(' ')}" y="${e.y.join(' ')}">${e.g}</text>`
+    }
+    return s
+  }
+
+  /** A top-down shark: body profile + fins, shaded along a lit flank, with spots or a hammer head. */
+  function shark(kind, seed) {
+    const R = rng(seed)
+    const prof = kind === 'h' ? [[152, 0], [150, 13], [132, 19], [108, 27], [80, 32], [40, 30], [0, 24], [-40, 16], [-80, 9], [-112, 5.5]] : [[181, 0], [178, 7], [168, 15], [152, 23], [128, 31], [96, 37], [60, 38], [20, 33], [-20, 25], [-60, 16], [-90, 9], [-112, 5.5]]
+    const hw = x => {
+      for (let i = 1; i < prof.length; i++) if (x >= prof[i][0]) return x > prof[0][0] ? 0 : prof[i][1] + ((prof[i - 1][1] - prof[i][1]) * (x - prof[i][0])) / (prof[i - 1][0] - prof[i][0])
+      return 0
+    }
+    const pec = [[98, 22], [50, 28], [6, 72], [-20, 62], [20, 20]]
+    const pel = [[-24, 8], [-52, 34], [-70, 28], [-58, 6]]
+    const tail = kind === 'h' ? [[-100, -6], [-142, -11], [-204, -40], [-188, -17], [-152, -1], [-126, 7], [-100, 6]] : [[-100, -6], [-150, -8], [-214, -26], [-200, -10], [-164, 3], [-130, 7], [-100, 6]]
+    const ham = [[148, -58], [166, -56], [177, -24], [180, 0], [177, 24], [166, 56], [148, 58], [144, 30], [136, 12], [136, -12], [144, -30]]
+    const fins = [pec, mirror(pec), pel, mirror(pel)]
+    const spots = []
+    for (let i = 0; i < 20; i++) spots.push([160 - R() * 260, (R() - 0.5) * 64, 8 + R() * 6])
+    const inside = (x, y) => {
+      if (kind === 'h' && inPoly(x, y, ham)) return 3
+      if (Math.abs(y) <= hw(x) && !(kind === 'h' && x > 150)) return 1
+      if (inPoly(x, y, tail)) return 4
+      for (const f of fins) if (inPoly(x, y, f)) return 2
+      return 0
+    }
+    const tone = (x, y, p) => {
+      const j = (R() - 0.5) * 0.14
+      if (p === 2) return 0.3 + (y < 0 ? 0.14 : 0) + j + (Math.abs(y) > 50 ? 0.12 : 0)
+      if (p === 4) return 0.36 + j + (x < -170 ? 0.15 : 0)
+      if (p === 3) return 0.52 - y / 300 + j + (x > 168 ? 0.22 : 0)
+      const v = y / Math.max(hw(x), 1)
+      let t = 0.56 - 0.22 * v + 0.34 * Math.exp(-Math.pow((v + 0.4) / 0.24, 2)) - 0.1 * v * v
+      if (kind === 'l') {
+        for (const [sx, sy, sr] of spots) if ((x - sx) ** 2 + (y - sy) ** 2 < sr * sr) t -= 0.4
+        t += 0.1
+      } else t += 0.06 * Math.sin(x / 26)
+      return t + j
+    }
+    const ts = raster(inside, tone, [-216, -84, 184, 84])
+    const ramp = kind === 'h' ? SLA : NEU
+    const joints = [10, -45, -95, -142]
+    const amp = [4.5, 6.5, 9, 13]
+    const seg = t => joints.filter(jx => t.x < jx).length
+    let s = `<g transform="scale(1.2)"><ellipse cx="30" cy="0" rx="230" ry="80" fill="url(#gr-gw${kind})"/>`
+    s += emit(ts.filter(t => seg(t) === 0), { ramp, R, fl: true, accP: 0.045, d: 0.3 })
+    let close = ''
+    let prev = 0
+    joints.forEach((jx, k) => {
+      s += `<g transform="translate(${jx - prev} 0)"><g class="gr-j" style="--a:${amp[k]}deg;animation-delay:-${n(4 - k * 0.24)}s">`
+      s += emit(ts.filter(t => seg(t) === k + 1), { ox: jx, ramp, R, fl: true, accP: 0.045, d: 0.3 + k * 0.4 })
+      close += '</g></g>'
+      prev = jx
+    })
+    return s + close + '</g>'
+  }
+
+  function manta(seed) {
+    const R = rng(seed)
+    const k = 1
+    const half = [[44, 0], [50, -9], [92, -15], [96, -24], [62, -30], [40, -48], [12, -82], [-14, -112], [-34, -86], [-48, -52], [-62, -24], [-76, -8], [-80, 0]].map(([x, y]) => [x * k, y * k])
+    const body = half.concat(mirror(half).reverse())
+    const tl = [[-60, -3.4], [-150, -2.4], [-232, -0.6], [-232, 0.6], [-150, 2.4], [-60, 3.4]]
+    const inside = (x, y) => (inPoly(x, y, body) ? 1 : inPoly(x, y, tl) ? 4 : 0)
+    const tone = (x, y, p) => {
+      const j = (R() - 0.5) * 0.12
+      if (p === 4) return 0.42 + j
+      const a = Math.abs(y)
+      let t = 0.2 + j
+      t += 0.7 * Math.exp(-(((x - 30) / 15) ** 2 + ((a - 28) / 13) ** 2))
+      t += a > 60 ? (a - 60) / 60 : 0
+      t += x > 50 ? 0.45 : 0
+      t += 0.3 * Math.exp(-(((x + 0.62 * a - 46) / 9) ** 2))
+      t += y < 0 ? 0.08 : -0.02
+      return t
+    }
+    const ts = raster(inside, tone, [-236, -112, 84, 112])
+    let s = `<ellipse cx="0" cy="0" rx="130" ry="120" fill="url(#gr-gwm)"/>`
+    s += emit(ts.filter(t => t.x >= -62 && Math.abs(t.y) <= 42), { ramp: MAN, R, fl: true, accP: 0.04, d: 0.2 })
+    for (const sg of [-1, 1]) s += `<g transform="translate(-10 ${42 * sg})"><g class="gr-flap" style="--a:${8 * sg}deg">${emit(ts.filter(t => t.x >= -62 && t.y * sg > 42), { ox: -10, oy: 42 * sg, ramp: MAN, R, fl: true, accP: 0.04, d: 0.9 })}</g></g>`
+    s += `<g transform="translate(-62 0)"><g class="gr-j" style="--a:5deg;animation-delay:-2s">${emit(ts.filter(t => t.x < -62 && t.x >= -140), { ox: -62, ramp: MAN, R, glyph: false })}`
+    s += `<g transform="translate(-78 0)"><g class="gr-j" style="--a:9deg;animation-delay:-1.6s">${emit(ts.filter(t => t.x < -140), { ox: -140, ramp: MAN, R, glyph: false })}</g></g></g></g>`
+    return s
+  }
+
+  /** Seabed mounds, corals and kelp — all tiles. */
+  function reef() {
+    const R = rng(4107)
+    const cols = Math.ceil(W / C)
+    const hgt = []
+    for (let i = 0; i < cols; i++) {
+      const x = i * C + 6
+      let h = 1.5 + 0.8 * Math.sin(x / 61) + 0.5 * Math.sin(x / 23 + 1) + R() * 0.7
+      if (x > 1350) h += 18 * Math.pow((x - 1350) / 250, 1.2) + 1.2 * Math.sin(x / 19)
+      h += 11 * Math.exp(-(((x - 60) / 140) ** 2)) + 3 * Math.exp(-(((x - 250) / 50) ** 2))
+      hgt.push(h)
+    }
+    const ts = []
+    for (let i = 0; i < cols; i++)
+      for (let j = 0; j < hgt[i]; j++) {
+        const d = hgt[i] - j - 0.5
+        const lit = hgt[i] - (hgt[i + 1] ?? hgt[i])
+        ts.push({ x: i * C + 6, y: H - j * C - 6, cov: d < 0.4 ? 0.2 : d < 1.1 ? 0.45 : d < 1.9 ? 0.7 : 1, tone: clamp(0.92 - 0.055 * d - (d > 1.9 ? 0.1 : 0) + clamp(lit, -1, 1) * -0.12, 0.28, 0.99) + (R() - 0.5) * 0.12, ng: i * C < 340 || (d > 3 && R() < 0.5) })
+      }
+    let s = emit(ts, { ramp: SEA, R, accP: 0.05 })
+    // brain coral dome (rust), lit from the upper right
+    const dome = (cx, cy, r, ramp) => {
+      const d = raster(
+        (x, y) => ((x - cx) ** 2 + (y - cy) ** 2 < r * r ? 1 : 0),
+        (x, y) => {
+          const nx = (x - cx) / r
+          const ny = (y - cy) / r
+          const nz = Math.sqrt(Math.max(0, 1 - nx * nx - ny * ny))
+          return clamp(0.3 + 0.6 * (nx * 0.42 - ny * 0.78 + nz * 0.28) + (R() - 0.5) * 0.12, 0.05, 0.99)
+        },
+        [cx - r, cy - r, cx + r, cy + r],
+      )
+      return emit(d, { ramp, R })
+    }
+    s += dome(1486, 890, 42, RUST) + dome(1400, 966, 24, RUST) + dome(1584, 836, 20, VIO) + dome(300, 962, 26, RUST)
+    // violet organ-pipe corals
+    const pipes = (x0, list) => {
+      const t = []
+      list.forEach((hh, k) => {
+        const i = Math.round((x0 + k * C * 2 - 6) / C)
+        const base = Math.floor(hgt[i])
+        for (let j = 0; j < hh; j++) t.push({ x: i * C + 6, y: H - (base + j) * C - 6, cov: j === hh - 1 ? 0.7 : 1, tone: 0.2 + (0.62 * j) / hh + (R() - 0.5) * 0.1, ramp: j === hh - 1 && k % 2 ? NEU : VIO })
+      })
+      return emit(t, { ramp: VIO, R })
+    }
+    s += pipes(1536, [6, 8, 5]) + pipes(1344, [2, 3]) + pipes(120, [5, 7, 6, 4])
+    return s
+  }
+  function kelp(x, base, len, ph, dur, dim, big) {
+    const R = rng(x)
+    const t = []
+    const m = big ? 2.3 : 1
+    for (let k = 0; k < len; k++) t.push({ x: x + 8 * m * Math.sin(k * 0.55 + ph), y: base - k * 10 * m, cov: k > len - 3 ? 0.5 : 0.7, tone: clamp(0.3 + (0.62 * k) / len + (R() - 0.5) * 0.16 - dim, 0, 0.95) })
+    return `<g class="gr-kp"${big ? ' filter="url(#gr-bl)"' : ''} style="transform-origin:${x}px ${base}px;animation-duration:${dur}s;animation-delay:-${n(ph * 2)}s">${emit(t, { ramp: KLP, R, glyph: false, cell: big ? 28 : C })}</g>`
+  }
+
+  function jelly(cx, cy) {
+    const R = rng(55)
+    const ts = raster((x, y) => (y <= 5 && (x / 36) ** 2 + (y / 30) ** 2 < 1 ? 1 : 0), (x, y) => clamp(0.42 - y / 70 + x / 110 + (R() - 0.5) * 0.14, 0, 0.99), [-36, -30, 36, 6])
+    const tx = [[], []]
+    const ty = [[], []]
+    const g = ['', '']
+    ;[-24, -12, 0, 12, 24].forEach((x, i) => {
+      const len = [4, 7, 5, 8, 4][i]
+      for (let k = 0; k < len; k++) {
+        tx[i % 2].push(n(x + 3 * Math.sin(k * 0.9 + i)))
+        ty[i % 2].push(18 + k * 12)
+        g[i % 2] += ":.':|.:"[(k + i) % 7]
+      }
+    })
+    const tent = [0, 1].map(i => `<g class="gr-jt" style="animation-delay:-${i * 2.1}s"><text class="gr-t gr-jx" x="${tx[i].join(' ')}" y="${ty[i].join(' ')}">${g[i]}</text></g>`).join('')
+    return `<g class="gr-jf"><g transform="translate(${cx} ${cy}) scale(1.35)"><circle r="90" cy="10" fill="url(#gr-gwj)"/>${tent}<g class="gr-jb">${emit(ts, { ramp: VIO, R, fl: true, d: 1 })}</g></g></g>`
+  }
+
+  function mascotBell(bx, by) {
+    const R = rng(909)
+    let s = `<circle cx="${bx}" cy="${by}" r="96" fill="url(#gr-gwo)"/><circle cx="${bx}" cy="${by}" r="58" fill="url(#gr-gls)"/>`
+    // bubble wall: a ring of tiny tiles, brighter toward the surface light
+    const ring = { }
+    for (let k = 0; k < 46; k++) {
+      const a = (k / 46) * Math.PI * 2
+      const l = 0.5 + 0.5 * Math.cos(a + 1.05)
+      if (R() < 0.08) continue
+      const sz = 2 + Math.round(3.4 * l)
+      const col = NEU[2 + Math.round(5 * l)]
+      ;(ring[col] ||= []).push(`M${n(bx + 60 * Math.cos(a) - sz / 2)} ${n(by + 60 * Math.sin(a) - sz / 2)}h${sz}v${sz}h-${sz}z`)
+    }
+    for (let k = 0; k < 6; k++) {
+      const a = -1.35 + k * 0.17
+      const sz = [3, 4, 5, 5, 4, 3][k]
+      ;(ring['#e8e2cf'] ||= []).push(`M${n(bx + 48 * Math.cos(a) - sz / 2)} ${n(by + 48 * Math.sin(a) - sz / 2)}h${sz}v${sz}h-${sz}z`)
+    }
+    for (const c in ring) s += `<path fill="${c}" d="${ring[c].join('')}"/>`
+    // the critter, 12 x 6 orange glyph tiles
+    const cell = 9
+    const x0 = bx - 54 + 4.5
+    const y0 = by - 22 + 4.5
+    const word = 'CLAUDECODE'
+    const body = []
+    const armL = []
+    const armR = []
+    let gi = 0
+    for (let r = 0; r < 6; r++)
+      for (let c = 0; c < 12; c++) {
+        const inBody = c >= 2 && c <= 9 && r <= 4
+        const arm = r === 2 && (c < 2 || c > 9)
+        const leg = r === 5 && [2, 4, 7, 9].includes(c)
+        if (!inBody && !arm && !leg) continue
+        const eye = (c === 4 || c === 7) && (r === 1 || r === 2)
+        const tone = (r === 0 ? 0.86 : r === 4 || leg ? 0.3 : 0.58 - (c - 6) * 0.03) + (R() - 0.5) * 0.16
+        const t = { x: x0 + c * cell, y: y0 + r * cell, cov: 1, tone: clamp(tone, 0, 0.99), g: word[gi++ % 10], ng: eye }
+        ;(arm ? (c < 2 ? armL : armR) : body).push(t)
+      }
+    const eo = { ramp: ORA, R, cell, fs: ' gr-ms' }
+    const eyes = [4, 7].map(c => `<rect class="gr-eye" x="${n(x0 + c * cell - 3.5)}" y="${n(y0 + cell - 3)}" width="7" height="13" fill="#170c08"/>`).join('')
+    s += `<g class="gr-mc">${emit(body, eo)}${eyes}<g class="gr-armL" style="transform-origin:${n(x0 + 1.5 * cell)}px ${n(y0 + 2 * cell)}px">${emit(armL, eo)}</g><g class="gr-armR" style="transform-origin:${n(x0 + 9.5 * cell)}px ${n(y0 + 2 * cell)}px">${emit(armR, eo)}</g></g>`
+    return `<g class="gr-bb">${s}</g>`
+  }
+
+  function scene() {
+    const R = rng(31)
+    // plankton dashes, snapped to the cell grid, thick at the edges and nearly absent in the middle
+    const pk = [[], [], [], [], []]
+    for (let i = 0; i < 230; i++) {
+      let x
+      let y
+      const r = R()
+      if (r < 0.34) (x = 1430 + R() * 170), (y = R() * 860)
+      else if (r < 0.52) (x = 352 + R() * 130), (y = 120 + R() * 700)
+      else if (r < 0.74) (x = 360 + R() * 1240), (y = R() * 84)
+      else if (r < 0.9) (x = R() * 350), (y = R() * 840)
+      else (x = 480 + R() * 950), (y = 100 + R() * 760)
+      x = Math.round(x / 6) * 6
+      y = Math.round(y / C) * C + 6
+      pk[Math.floor(R() * 5)].push(`M${x} ${y}h${R() < 0.3 ? 1.6 : R() < 0.5 ? 9 : 5}`)
+    }
+    const plankton = pk.map((d, i) => `<path class="gr-pk" style="animation-duration:${[5.2, 7.4, 6.1, 9.3, 8][i]}s;animation-delay:-${n(i * 1.7)}s" d="${d.join('')}"/>`).join('')
+    // a school of tiny type-fish, far away
+    let school = ''
+    for (let i = 0; i < 17; i++) school += `<text x="${n(R() * 230)}" y="${n(R() * 110)}" opacity="${n(0.4 + R() * 0.6)}">&gt;&lt;&gt;</text>`
+    // far shark: small dim dots
+    const far = (() => {
+      const hw = x => Math.max(16 * Math.pow(Math.sin(Math.PI * Math.pow(clamp((90 - x) / 150, 0, 1), 0.56)), 0.85), x < 10 && x > -60 ? 2.6 : 0)
+      const tl = [[-52, -3], [-100, -14], [-92, -3], [-74, 3], [-52, 3]]
+      const pf = [[46, 10], [26, 12], [2, 36], [-4, 30], [14, 10]]
+      const ts = raster((x, y) => (Math.abs(y) <= hw(x) || inPoly(x, y, tl) || inPoly(x, y, pf) || inPoly(x, y, mirror(pf)) ? 1 : 0), () => 0.3, [-104, -40, 92, 40], 6)
+      return emit(ts, { ramp: ['#1a1d1d', '#1a1d1d', '#1a1d1d', '#1a1d1d', '#1a1d1d', '#1a1d1d', '#1a1d1d', '#1a1d1d'], R, cell: 6, glyph: false })
+    })()
+    const bubbles = [0, 1, 2, 3, 4, 5].map(i => `<text class="gr-bu" style="animation-delay:-${n(i * 1.9)}s;animation-duration:${n(9 + (i % 3) * 2.2)}s" x="${n(392 + R() * 70)}" y="838" font-size="${[9, 12, 8, 11, 9, 13][i]}">${i % 2 ? 'o' : 'O'}</text>`).join('')
+    const bokeh = kelp(1596, 1010, 13, 0.9, 11, 0.34, true) + kelp(356, 1016, 9, 2.4, 12.5, 0.4, true)
+
+    const lapA = 'M300 66L1400 66Q1520 66 1520 186L1520 812Q1520 934 1398 934L292 934Q170 934 170 812L170 188Q170 66 300 66Z'
+    const lapB = 'M1400 68L300 68Q176 68 176 192L176 806Q176 930 300 930L1400 930Q1518 930 1518 806L1518 192Q1518 68 1400 68Z'
+    const mpath = 'M1548 1180C1500 860 1566 560 1522 260S1530 -70 1516 -190'
+
+    const style =
+      `.gr-t{font:700 9.5px ui-monospace,Menlo,Consolas,monospace;text-anchor:middle}.gr-ms{font-size:7.5px}` +
+      `.gr-d{fill:#0b0b0a}.gr-l{fill:#f4f1e6;fill-opacity:.56}.gr-ms.gr-d,.gr-ms.gr-l{fill:#4a1c0e;fill-opacity:.8}` +
+      `.gr-fa{animation:grFa 1.9s steps(1) infinite}.gr-fb{animation:grFb 1.9s steps(1) infinite}` +
+      `.gr-ga{animation:grFa 2.7s steps(1) infinite}.gr-gb{animation:grFb 2.7s steps(1) infinite}` +
+      `@keyframes grFa{0%{opacity:1}58%{opacity:0}100%{opacity:0}}@keyframes grFb{0%{opacity:0}58%{opacity:1}100%{opacity:1}}` +
+      `.gr-j{animation:grJ 1.5s ease-in-out infinite alternate}@keyframes grJ{from{transform:rotate(calc(var(--a)*-1))}to{transform:rotate(var(--a))}}` +
+      `.gr-yw{animation:grYw 1.5s ease-in-out infinite alternate}@keyframes grYw{from{transform:rotate(2.4deg)}to{transform:rotate(-2.4deg)}}` +
+      `.gr-la{offset-path:path('${lapA}');offset-rotate:auto;animation:grLap 62s linear infinite;animation-delay:-7.5s}` +
+      `.gr-lb{offset-path:path('${lapB}');offset-rotate:auto;animation:grLap 74s linear infinite;animation-delay:-60.5s}` +
+      `.gr-lm{offset-path:path('${mpath}');offset-rotate:auto;animation:grMan 56s linear infinite;animation-delay:-28.5s}` +
+      `.gr-lf{offset-path:path('M-140 640C300 560 700 660 1000 520S1500 300 1760 360');offset-rotate:auto;animation:grLap 96s linear infinite;animation-delay:-30s}` +
+      `@keyframes grLap{from{offset-distance:0%}to{offset-distance:100%}}@keyframes grMan{0%{offset-distance:0%}84%,100%{offset-distance:100%}}` +
+      `.gr-flap{animation:grFlap 3.6s ease-in-out infinite alternate}@keyframes grFlap{from{transform:rotate(calc(var(--a)*-.5))}to{transform:rotate(var(--a))}}` +
+      `.gr-kp{animation:grKp 7s ease-in-out infinite alternate}@keyframes grKp{from{transform:skewX(-7deg)}to{transform:skewX(6deg)}}` +
+      `.gr-pk{fill:none;stroke:#bdb9a8;stroke-width:1.7;animation:grPk 6s steps(1) infinite}@keyframes grPk{0%{opacity:.5}22%{opacity:.12}41%{opacity:.34}63%{opacity:.06}80%{opacity:.42}100%{opacity:.5}}` +
+      `.gr-sc{font:700 9px ui-monospace,Menlo,Consolas,monospace;fill:#5d625f;animation:grSc 110s linear infinite;animation-delay:-38s}@keyframes grSc{from{transform:translate(-300px,560px)}to{transform:translate(1700px,300px)}}` +
+      `.gr-ry{animation:grRy 11s ease-in-out infinite alternate}.gr-ry2{animation-duration:17s;animation-delay:-6s}@keyframes grRy{from{opacity:.35}to{opacity:1}}` +
+      `.gr-bb{animation:grBb 7s ease-in-out infinite alternate}@keyframes grBb{from{transform:translateY(-4px)}to{transform:translateY(5px)}}` +
+      `.gr-mc{animation:grPeek 20s ease-in-out infinite;animation-delay:-16.4s}@keyframes grPeek{0%,70%,97%,100%{transform:translateY(5px)}75%,91%{transform:translateY(-9px)}}` +
+      `.gr-armR{animation:grArm 20s steps(1) infinite;animation-delay:-16.4s}@keyframes grArm{0%{transform:rotate(0)}75%{transform:rotate(-42deg)}78%{transform:rotate(-12deg)}81%{transform:rotate(-42deg)}84%{transform:rotate(-12deg)}87%{transform:rotate(-42deg)}90%{transform:rotate(0)}100%{transform:rotate(0)}}` +
+      `.gr-eye{transform-box:fill-box;transform-origin:center;animation:grBl 5.2s infinite}@keyframes grBl{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.12)}}` +
+      `.gr-bu{font:700 10px ui-monospace,Menlo,Consolas,monospace;fill:#cfcab8;animation:grBu 9s linear infinite}@keyframes grBu{0%{transform:translate(0,0);opacity:0}8%{opacity:.6}50%{transform:translate(7px,-120px);opacity:.35}100%{transform:translate(-4px,-250px);opacity:0}}` +
+      `.gr-jf{animation:grJf 26s ease-in-out infinite alternate;animation-delay:-9s}@keyframes grJf{from{transform:translate(-6px,-150px)}to{transform:translate(8px,190px)}}` +
+      `.gr-jb{animation:grJb 2.8s ease-in-out infinite alternate}@keyframes grJb{from{transform:scale(1.06,.84)}to{transform:scale(.94,1.08)}}` +
+      `.gr-jt{animation:grJt 2.8s ease-in-out infinite alternate}@keyframes grJt{from{transform:scaleY(.86) skewX(-4deg)}to{transform:scaleY(1.1) skewX(4deg)}}.gr-jx{fill:#a79df0;fill-opacity:.7}` +
+            ''
+
+    const defs =
+      `<defs>` +
+      `<linearGradient id="gr-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a0c0c"/><stop offset=".45" stop-color="#050505"/><stop offset="1" stop-color="#020202"/></linearGradient>` +
+      `<radialGradient id="gr-top" cx="1380" cy="-140" r="980" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#2a3a38" stop-opacity=".62"/><stop offset=".5" stop-color="#141c1c" stop-opacity=".3"/><stop offset="1" stop-color="#050505" stop-opacity="0"/></radialGradient>` +
+      `<pattern id="gr-grid" width="12" height="12" patternUnits="userSpaceOnUse"><path d="M12 0V12H0" fill="none" stroke="#0f1010" stroke-width="1"/></pattern>` +
+      `<pattern id="gr-ray" width="24" height="36" patternUnits="userSpaceOnUse"><text class="gr-t" fill="#cfd8d2" x="6" y="9">:</text><text class="gr-t" fill="#cfd8d2" x="18" y="21">.</text><text class="gr-t" fill="#cfd8d2" x="6" y="33">'</text><text class="gr-t" fill="#cfd8d2" x="18" y="3">|</text></pattern>` +
+      `<linearGradient id="gr-rf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".7" stop-color="#fff" stop-opacity=".25"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>` +
+      `<filter id="gr-b12" x="-20%" y="-10%" width="140%" height="120%"><feGaussianBlur stdDeviation="12"/></filter>` +
+      `<filter id="gr-bl" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3.4"/></filter>` +
+      `<mask id="gr-m1" maskUnits="userSpaceOnUse" x="0" y="0" width="1600" height="1000"><g filter="url(#gr-b12)"><path d="M1330 -20L1470 -20L1330 760L1250 760Z" fill="url(#gr-rf)"/><path d="M1560 -20L1640 -20L1600 700L1520 620Z" fill="url(#gr-rf)" opacity=".8"/></g></mask>` +
+      `<mask id="gr-m2" maskUnits="userSpaceOnUse" x="0" y="0" width="1600" height="1000"><g filter="url(#gr-b12)"><path d="M1090 -20L1180 -20L1010 520L960 520Z" fill="url(#gr-rf)" opacity=".5"/><path d="M1480 -20L1540 -20L1450 860L1410 860Z" fill="url(#gr-rf)"/></g></mask>` +
+      ['l:#e8e2cf:.16', 'h:#8ea0e0:.18', 'm:#6fd0a0:.13', 'o:#ff8a5c:.2', 'j:#8b7fe0:.2']
+        .map(v => v.split(':'))
+        .map(([k, c, o]) => `<radialGradient id="gr-gw${k}"><stop offset="0" stop-color="${c}" stop-opacity="${o}"/><stop offset=".55" stop-color="${c}" stop-opacity="${n(o * 0.4)}"/><stop offset="1" stop-color="${c}" stop-opacity="0"/></radialGradient>`)
+        .join('') +
+      `<radialGradient id="gr-gls" cx=".62" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".07"/><stop offset=".55" stop-color="#fff" stop-opacity=".015"/><stop offset="1" stop-color="#e8e2cf" stop-opacity=".1"/></radialGradient>` +
+      `<radialGradient id="gr-vg" cx=".5" cy=".46" r=".78"><stop offset=".5" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".42"/></radialGradient>` +
+      `<linearGradient id="gr-dp" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#050606" stop-opacity="0"/><stop offset="1" stop-color="#030404" stop-opacity=".78"/></linearGradient>` +
+      `<filter id="gr-gn" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 .9  0 0 0 0 .9  0 0 0 0 .84  0 0 0 .5 -.24"/></filter>` +
+      `</defs>`
+
+    const body =
+      defs +
+      `<rect width="${W}" height="${H}" fill="url(#gr-bg)"/><rect width="${W}" height="${H}" fill="url(#gr-top)"/><rect width="${W}" height="${H}" fill="url(#gr-grid)"/>` +
+      `<g class="gr-ry"><rect width="${W}" height="900" fill="url(#gr-ray)" mask="url(#gr-m1)" opacity=".6"/></g>` +
+      `<g class="gr-ry gr-ry2"><rect width="${W}" height="900" fill="url(#gr-ray)" mask="url(#gr-m2)" opacity=".5"/></g>` +
+      `<g class="gr-lf"><g class="gr-yw">${far}</g></g>` +
+      `<g class="gr-sc">${school}</g>` +
+      kelp(398, 990, 20, 0.4, 9, 0.22) +
+      kelp(462, 994, 15, 2.1, 8, 0.26) +
+      kelp(1452, 960, 22, 1.2, 8.5, 0.2) +
+      plankton +
+      `<g class="gr-lm">${manta(5)}</g>` +
+      `<g class="gr-lb"><g class="gr-yw" style="animation-delay:-.6s">${shark('h', 21)}</g></g>` +
+      `<g class="gr-la"><g class="gr-yw">${shark('l', 8)}</g></g>` +
+      `<rect y="760" width="${W}" height="240" fill="url(#gr-dp)"/>` +
+      reef() +
+      kelp(1432, 968, 19, 0.2, 7, 0) +
+      kelp(1586, 800, 13, 2.8, 6.2, 0) +
+      kelp(36, 850, 14, 1, 7.5, 0.05) +
+      kelp(212, 940, 16, 3.3, 8.2, 0.05) +
+      jelly(424, 420) +
+      bubbles +
+      mascotBell(425, 902) +
+      bokeh +
+      `<rect width="${W}" height="${H}" fill="url(#gr-vg)"/>` +
+      `<rect width="${W}" height="${H}" filter="url(#gr-gn)" opacity=".28"/>`
+    return svg(style, body)
+  }
+
+  registerTheme({
+    id: 'glyph-reef',
+    title: 'Glyph Reef',
+    blurb: 'Sharks and a manta set in type circle a black reef, one glyph tile at a time.',
+    window: 'dark',
+    mascot: true,
+    tags: ['ascii', 'glyph mosaic', 'phosphor'],
+    palette: { s0: '#050505', s1: '#0E0E0F', s2: '#171718', s3: '#1E1E1F', text: '#EDEBE4', text2: '#BEBBB0', muted: '#8A8983', accent: '#D97757', danger: '#E5604A', success: '#58B07A', warning: '#D9A441' },
+    glass: { blur: 28, tint: '#0A0A0C', opacity: 0.55 },
+    cli: { bg: '#050505', fg: '#DAD7CC', dim: '#6E6E6A', claude: '#D97757', accent: '#8B7FE0', border: '#3A3A3A', success: '#4E9C9C', error: '#E5604A', warning: '#D9A441', add: '#10261A', del: '#2E1410' },
+    scene,
+  })
+})()
+
 ;return THEMES
 })()
