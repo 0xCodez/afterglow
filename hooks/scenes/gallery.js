@@ -1294,5 +1294,400 @@ function registerTheme(t) {
   })
 })()
 
+;
+// ---- 10-cypress-hill.js
+// 10 Cypress Hill — a naturalist's gouache plate on drafting paper: one lush hill, one Monterey cypress, tiny life.
+;(() => {
+  const { W, H, rng, n, svg } = K
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16))
+  const mix = (a, b, t) => {
+    const A = hex(a)
+    const B = hex(b)
+    return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * t).toString(16).padStart(2, '0')).join('')
+  }
+  const sm = t => (1 - Math.cos(Math.PI * Math.max(0, Math.min(1, t)))) / 2
+  // Silhouettes of the planes, far to near.
+  const far1 = x => 752 - 20 * Math.sin(x / 330 + 0.5) - 7 * Math.sin(x / 140)
+  const far2 = x => 786 - 15 * Math.sin(x / 250 + 2.2) + 4 * Math.sin(x / 95)
+  const ridge = x => 836 - (x > 780 ? 80 * sm((x - 780) / 780) : 52 * sm((780 - x) / 560)) + 2.5 * Math.sin(x / 67) + 1.5 * Math.sin(x / 29 + 1)
+  const near = x => 872 + 170 * sm((x - 200) / 1050) + 5 * Math.sin(x / 83) + 2 * Math.sin(x / 37)
+  const line = (f, x0, x1, st, dy = 0) => {
+    let d = ''
+    for (let x = x0; x <= x1; x += st) d += (d ? 'L' : 'M') + n(x) + ' ' + n(f(x) + dy)
+    return d
+  }
+  const hill = (f, dy = 0) => line(f, -60, 1700, 16, dy) + 'L1700 1030L-60 1030Z'
+
+  // Blade fringe: thin strokes along a silhouette, bucketed into sway chunks and three tones.
+  function fringe(f, r, step, hmin, hmax, chunks, tones, sw, cls, base) {
+    const buckets = Array.from({ length: chunks }, () => tones.map(() => ''))
+    for (let x = -10; x < 1612; x += step) {
+      const xx = x + (r() - 0.5) * step
+      const h = hmin + (hmax - hmin) * Math.pow(r(), 1.8)
+      const lean = (r() - 0.32) * h * 0.75
+      const c = Math.min(chunks - 1, Math.max(0, Math.floor((xx / 1600) * chunks)))
+      const tone = Math.floor(r() * tones.length)
+      buckets[c][tone] += `M${Math.round(xx)} ${Math.round(f(xx) + base)}q${Math.round(lean * 0.15)} ${Math.round(-h * 0.6)} ${Math.round(lean)} ${Math.round(-h)}`
+    }
+    return buckets
+      .map((b, i) => `<g class="${cls}" style="animation-delay:${n(-i * 0.42 - 1)}s">` + b.map((d, k) => (d ? `<path d="${d}" stroke="${tones[k]}" stroke-width="${sw[k]}"/>` : '')).join('') + '</g>')
+      .join('')
+  }
+
+  // Tapered limb as a filled ribbon along a quadratic.
+  function limb(x0, y0, cx, cy, x1, y1, w0, w1) {
+    const L = []
+    const R = []
+    for (let i = 0; i <= 6; i++) {
+      const t = i / 6
+      const x = (1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * cx + t * t * x1
+      const y = (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * cy + t * t * y1
+      const dx = 2 * (1 - t) * (cx - x0) + 2 * t * (x1 - cx)
+      const dy = 2 * (1 - t) * (cy - y0) + 2 * t * (y1 - cy)
+      const l = Math.hypot(dx, dy) || 1
+      const w = (w0 + (w1 - w0) * t) / 2
+      L.push(n(x - (dy / l) * w) + ' ' + n(y + (dx / l) * w))
+      R.unshift(n(x + (dy / l) * w) + ' ' + n(y - (dx / l) * w))
+    }
+    return 'M' + L.join('L') + 'L' + R.join('L') + 'Z'
+  }
+
+  function tree() {
+    const r = rng(1012)
+    // canopy pads: cx, cy, rx, ry, front?
+    const pads = [
+      [-150, -238, 60, 16, 0], [122, -242, 52, 15, 0], [-12, -210, 46, 13, 0], [-180, -154, 38, 10, 0], [128, -158, 34, 10, 0], [-64, -302, 52, 15, 0], [66, -308, 52, 15, 0],
+      [-10, -326, 104, 26, 1], [-104, -284, 72, 20, 1], [92, -288, 78, 21, 1], [-46, -250, 58, 16, 1], [60, -243, 66, 17, 1],
+      [-124, -190, 58, 15, 1], [110, -194, 60, 15, 1], [-204, -208, 36, 10, 1], [166, -214, 30, 9, 1],
+    ]
+    const hubs = [[-76, -180], [-2, -224], [64, -202]]
+    const hubOf = (cx, cy) => (cy > -165 ? (cx < 0 ? [-3, -92] : [0, -100]) : cx < -40 ? hubs[0] : cx > 45 ? hubs[2] : hubs[1])
+    let limbs = ''
+    let twigs = ''
+    for (const [hx, hy] of hubs) {
+      limbs += limb(-2, -94, -2 + (hx + 2) * 0.22, -94 + (hy + 94) * 0.6, hx, hy, 20, 11)
+    }
+    for (const [cx, cy, rx, ry] of pads) {
+      const [hx, hy] = hubOf(cx, cy)
+      const ex = cx + (cx < 0 ? rx * 0.15 : -rx * 0.15)
+      const ey = cy + ry * 0.35
+      limbs += limb(hx, hy, hx + (ex - hx) * 0.45, hy + (ey - hy) * 0.7, ex, ey, cy > -165 ? 13 : 10, 2.6)
+      for (let k = 0; k < (cy > -165 ? 0 : 4); k++) {
+        const t = 0.62 + r() * 0.36
+        const bx = hx + (ex - hx) * t
+        const by = hy + (ey - hy) * (t * 0.9 + 0.05)
+        const tx = ex + (r() * 2 - 1) * rx * 0.42
+        twigs += `M${n(bx)} ${n(by)}Q${n((bx + tx) / 2)} ${n(by - 4)} ${n(tx)} ${n(cy + ry * 0.2)}`
+      }
+    }
+    const Q = [2, 3.2, 5, 7.5, 10.5, 14, 18]
+    const put = (acc, x, y, rad) => {
+      let k = 0
+      while (k < Q.length - 1 && rad > (Q[k] + Q[k + 1]) / 2) k++
+      acc[k] += `M${Math.round(x)} ${Math.round(y)}h0`
+    }
+    const out = (acc, col) => acc.map((d, k) => (d ? `<path d="${d}" stroke="${col}" stroke-width="${Q[k] * 2}"/>` : '')).join('')
+    const pad = ([cx, cy, rx, ry, front], i) => {
+      const sh = Math.max(0, Math.min(1, (cx + 200) / 400)) * (front ? 0.9 : 0.7) + (front ? 0 : 0.3)
+      const cU = mix('#2E3F17', '#1F2B0D', sh)
+      const cM = mix('#64812F', '#476122', sh)
+      const cL = mix('#9BB14C', '#74903A', sh)
+      const cH = mix('#DDE391', '#A2B758', sh)
+      const U = Q.map(() => '')
+      const M = Q.map(() => '')
+      const Lt = Q.map(() => '')
+      const Hi = Q.map(() => '')
+      const N = Math.round(rx / 3.6)
+      const tilt = (r() - 0.5) * 0.16
+      for (let k = 0; k < N; k++) {
+        const t = ((k + 0.5) / N) * 2 - 1 + (r() - 0.5) * 0.1
+        const e = Math.sqrt(Math.max(0.04, 1 - t * t * 0.9))
+        const x = cx + t * rx
+        const y0 = cy + t * rx * tilt
+        put(U, x + (r() - 0.5) * 6, y0 + ry * 0.55 + (r() - 0.5) * 4, ry * (0.5 + 0.3 * r()) * e + 2.5)
+        put(M, x + (r() - 0.5) * 5, y0 - ry * 0.08 + (r() - 0.5) * ry * 0.3, ry * (0.6 + 0.3 * r()) * e + 2.5)
+        if (r() < 0.8) put(M, x, y0 - ry * (0.8 + 0.4 * r()) * e, 2 + r() * 4)
+        if (r() < 0.35) put(U, x, y0 + ry * (0.9 + 0.5 * r()) * e, 2 + r() * 3)
+      }
+      for (let k = 0; k < N * 1.5; k++) {
+        const t = r() * 1.72 - 1
+        const e = Math.sqrt(Math.max(0, 1 - t * t))
+        put(Lt, cx + t * rx * 0.92, cy + t * rx * tilt - ry * (0.15 + 0.65 * r()) * e - 1, 2.2 + r() * 4.5)
+      }
+      for (let k = 0; k < N * 0.8; k++) {
+        const t = r() * 1.35 - 1
+        const e = Math.sqrt(Math.max(0, 1 - t * t))
+        put(Hi, cx + t * rx * 0.9, cy + t * rx * tilt - ry * (0.6 + 0.45 * r()) * e - 1, 1.6 + r() * 2.4)
+      }
+      return (
+        `<g class="ch-pd" style="animation-duration:${n(5.5 + (i % 5) * 0.9)}s;animation-delay:${n(-i * 1.3)}s"><g filter="url(#ch-lf)" fill="none" stroke-linecap="round">` +
+        out(U, cU) + out(M, cM) + out(Lt, cL) + out(Hi, cH) + '</g></g>'
+      )
+    }
+    const back = pads.map((p, i) => (p[4] ? '' : pad(p, i))).join('')
+    const front = pads.map((p, i) => (p[4] ? pad(p, i) : '')).join('')
+    const trunk =
+      `<g filter="url(#ch-bk)"><path d="M-40 14Q-22 8 -19 -40L12 -40Q18 6 40 14Z" fill="url(#ch-tk)"/>` +
+      `<path d="${limbs}" fill="url(#ch-lb)"/>` +
+      `<path d="${limb(0, 8, -22, -64, 4, -124, 42, 26)}" fill="url(#ch-tk)"/><circle cx="3" cy="-123" r="12.5" fill="url(#ch-tk)"/>` +
+      '</g>' +
+      `<path d="${twigs}" stroke="#4A3D2A" stroke-width="1.3" fill="none" opacity=".85"/>`
+    return `<g class="ch-tree"><g transform="translate(1426 ${n(ridge(1426) + 6)}) scale(1.06)">${back}${trunk}${front}</g></g>`
+  }
+
+  // The critter as a tiny gouache figure. Feet at the origin.
+  function critter(u, cls) {
+    const R = (x, y, w, h, f, k) => `<rect class="${k}" x="${n(x * u)}" y="${n(y * u)}" width="${n(w * u)}" height="${n(h * u)}" fill="${f}"/>`
+    return (
+      `<g class="${cls}-legs">` + [-3.4, -1.6, 0.6, 2.4].map((x, i) => R(x, -1.25, 1, 1.25, '#B9583A', `${cls}-l${i % 2}`)).join('') + '</g>' +
+      R(-6, -4.2, 2, 1.4, '#E08A63', `${cls}-al`) +
+      R(4, -4.2, 2, 1.4, '#C4623F', `${cls}-ar`) +
+      R(-4, -6.2, 8, 5, 'url(#ch-mb)', `${cls}-b`) +
+      R(-4, -6.2, 8, 0.55, '#F7B893', `${cls}-hl`) +
+      R(-4, -6.2, 0.5, 5, '#F3A982', `${cls}-hl`) +
+      R(-2.4, -5, 1, 1.6, '#2A211B', `${cls}-e`) +
+      R(1.4, -5, 1, 1.6, '#2A211B', `${cls}-e`)
+    )
+  }
+
+  registerTheme({
+    id: 'cypress-hill',
+    title: 'Cypress Hill',
+    blurb: 'A gouache field plate on drafting paper: one windy hill, one cypress, tiny life.',
+    window: 'light',
+    mascot: true,
+    tags: ['gouache plate', 'drafting paper', 'tiny life'],
+    palette: { s0: '#F2F3EE', s1: '#E9EAE3', s2: '#DFE1D7', s3: '#D2D5C9', text: '#2E2E2A', text2: '#4B4C44', muted: '#67685F', accent: '#C4613F', danger: '#B5442E', success: '#5C7620', warning: '#946A22' },
+    glass: { blur: 16, tint: '#F7F7F2', opacity: 0.7 },
+    cli: { bg: '#F2F3EE', fg: '#2E2E2A', dim: '#8A8A80', claude: '#D97757', accent: '#6E7A26', border: '#C8CABE', success: '#5C7620', error: '#B5442E', warning: '#8A6A3C', add: '#DCE5BF', del: '#F2D6CB' },
+    scene: () => {
+      const r = rng(77)
+      const u = 5
+      const ridgePath = line(ridge, -80, 1700, 20, 1)
+      const napX = 1352
+      let tot = 0
+      let atNap = 0
+      for (let x = -80; x < 1700; x += 20) {
+        const l = Math.hypot(20, ridge(x + 20) - ridge(x))
+        if (x < napX) atNap += l * Math.min(1, (napX - x) / 20)
+        tot += l
+      }
+      const napP = n((atNap / tot) * 100)
+      const napY = ridge(napX) + 1
+      const css =
+        `.ch-sw,.ch-sn{transform-box:fill-box;transform-origin:50% 100%;animation:chSw 3.8s ease-in-out infinite}` +
+        `.ch-sn{animation-duration:4.6s}` +
+        `@keyframes chSw{0%,100%{transform:skewX(-3deg)}50%{transform:skewX(8deg)}}` +
+        `.ch-fg{transform-box:fill-box;transform-origin:50% 100%;animation:chFg 6.5s ease-in-out infinite}` +
+        `@keyframes chFg{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(3.5deg)}}` +
+        `.ch-tree{transform-origin:1426px 786px;animation:chTree 7s ease-in-out infinite;animation-delay:-2s}` +
+        `@keyframes chTree{0%,100%{transform:rotate(-.5deg)}50%{transform:rotate(.9deg)}}` +
+        `.ch-pd{animation:chPd 6s ease-in-out infinite}` +
+        `@keyframes chPd{0%,100%{transform:translate(-1.5px,.6px)}50%{transform:translate(2.6px,-1px)}}` +
+        `.ch-cl{animation:chCl 150s linear infinite}@keyframes chCl{from{transform:translateX(-520px)}to{transform:translateX(1900px)}}` +
+        `.ch-cs{animation:chCs 75s linear infinite}@keyframes chCs{from{transform:translateX(-700px)}to{transform:translateX(2100px)}}` +
+        `.ch-gust{animation:chGust 21s cubic-bezier(.45,0,.3,1) infinite;animation-delay:-18.5s}` +
+        `@keyframes chGust{0%{transform:translateX(-900px)}45%,100%{transform:translateX(2400px)}}` +
+        `.ch-ray{animation:chRay 11s ease-in-out infinite}@keyframes chRay{0%,100%{opacity:.55}50%{opacity:1}}` +
+        // the walk → nap → wave story (64 s)
+        `.ch-wk{offset-path:path("${ridgePath}");offset-rotate:auto;animation:chGo 64s linear infinite,chWv 64s steps(1) infinite;animation-delay:-16.8s}` +
+        `@keyframes chGo{0%{offset-distance:0%}36%,86%{offset-distance:${napP}%}93.5%,100%{offset-distance:100%}}` +
+        `@keyframes chWv{0%{opacity:1}36%{opacity:0}86%{opacity:1}}` +
+        `.ch-wk-in{animation:chHop .46s ease-in-out infinite}@keyframes chHop{0%,100%{transform:translateY(0)}50%{transform:translateY(-${n(u * 0.4)}px)}}` +
+        `.ch-w-l0,.ch-w-l1{animation:chLeg .46s steps(2) infinite}.ch-w-l1{animation-delay:-.23s}` +
+        `@keyframes chLeg{0%{transform:translateY(0)}100%{transform:translateY(-${n(u * 0.7)}px)}}` +
+        `.ch-sl{animation:chSl 64s steps(1) infinite;animation-delay:-16.8s}@keyframes chSl{0%{opacity:0}36%{opacity:1}86%{opacity:0}}` +
+        `.ch-sl-in{animation:chSit 64s ease-in-out infinite;animation-delay:-16.8s}` +
+        `@keyframes chSit{0%,36%{transform:translateY(0)}38%,83.5%{transform:translateY(${n(u * 0.45)}px)}85.5%,100%{transform:translateY(0)}}` +
+        `.ch-s-legs{transform-box:fill-box;transform-origin:50% 0;animation:chTuck 64s ease-in-out infinite;animation-delay:-16.8s}` +
+        `@keyframes chTuck{0%,36%{transform:scaleY(1)}38%,83.5%{transform:scaleY(0)}85.5%,100%{transform:scaleY(1)}}` +
+        `.ch-s-e{transform-box:fill-box;transform-origin:50% 60%;animation:chEye 64s ease-in-out infinite;animation-delay:-16.8s}` +
+        `@keyframes chEye{0%,38.6%{transform:scaleY(1)}39.6%,73%{transform:scaleY(.14)}74%,77%{transform:scaleY(1)}77.6%{transform:scaleY(.14)}78.2%,100%{transform:scaleY(1)}}` +
+        `.ch-w-e{transform-box:fill-box;transform-origin:center;animation:chBl 5.2s infinite}@keyframes chBl{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.12)}}` +
+        `.ch-s-ar{transform-box:fill-box;transform-origin:0 50%;animation:chWave 64s ease-in-out infinite;animation-delay:-16.8s}` +
+        `@keyframes chWave{0%,76%{transform:rotate(0)}77.5%{transform:rotate(-42deg)}79%{transform:rotate(-12deg)}80.5%{transform:rotate(-42deg)}82%{transform:rotate(-12deg)}83.5%,100%{transform:rotate(0)}}` +
+        `.ch-zz{animation:chZz 64s steps(1) infinite;animation-delay:-16.8s}@keyframes chZz{0%{opacity:0}40.5%{opacity:1}72%{opacity:0}}` +
+        `.ch-z{animation:chZ 3.6s ease-out infinite}@keyframes chZ{0%{opacity:0;transform:translate(0,0)}25%{opacity:.9}100%{opacity:0;transform:translate(13px,-30px)}}` +
+        // small life
+        `.ch-bf{offset-rotate:0deg;animation:chFly 26s ease-in-out infinite}@keyframes chFly{from{offset-distance:0%}to{offset-distance:100%}}` +
+        `.ch-wg{transform-box:fill-box;transform-origin:50% 100%;animation:chFlap .34s ease-in-out infinite alternate}@keyframes chFlap{from{transform:scaleY(1)}to{transform:scaleY(.15)}}` +
+        `.ch-lf{animation:chLeaf 13s cubic-bezier(.3,.1,.5,1) infinite}` +
+        `@keyframes chLeaf{0%{opacity:0;transform:translate(0,0) rotate(0)}6%{opacity:1}70%{opacity:.9}100%{opacity:0;transform:translate(330px,150px) rotate(560deg)}}` +
+        `.ch-mt{animation:chMote 19s ease-in-out infinite}` +
+        `@keyframes chMote{0%{opacity:0;transform:translate(0,0)}15%{opacity:.9}50%{transform:translate(70px,-26px)}85%{opacity:.7}100%{opacity:0;transform:translate(150px,-8px)}}` +
+        `.ch-bd{animation:chBird 110s linear infinite;animation-delay:-38s}@keyframes chBird{from{transform:translate(1750px,40px)}to{transform:translate(-300px,-60px)}}` +
+        `.ch-bw{transform-box:fill-box;transform-origin:50% 100%;animation:chBw 1.1s ease-in-out infinite alternate}@keyframes chBw{from{transform:scaleY(1)}to{transform:scaleY(.35)}}` +
+        `.ch-vane{transform-origin:1528px 62px;animation:chVane 5.4s ease-in-out infinite}@keyframes chVane{0%,100%{transform:rotate(-7deg)}40%{transform:rotate(6deg)}70%{transform:rotate(-2deg)}}`
+
+      const grassFilter = (id, fx, fy, seed, tr, tg, tb) =>
+        `<filter id="${id}" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">` +
+        `<feTurbulence type="fractalNoise" baseFrequency="${fx} ${fy}" numOctaves="3" seed="${seed}"/>` +
+        `<feColorMatrix values="2.7 0 0 0 -.85 2.7 0 0 0 -.85 2.7 0 0 0 -.85 0 0 0 0 1"/>` +
+        `<feComponentTransfer><feFuncR type="table" tableValues="${tr}"/><feFuncG type="table" tableValues="${tg}"/><feFuncB type="table" tableValues="${tb}"/></feComponentTransfer></filter>`
+
+      const defs =
+        '<defs>' +
+        `<pattern id="ch-grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#E3E5DD" stroke-width="1"/></pattern>` +
+        `<pattern id="ch-grid2" width="200" height="200" patternUnits="userSpaceOnUse"><path d="M200 0H0V200" fill="none" stroke="#D9DBD2" stroke-width="1"/></pattern>` +
+        `<radialGradient id="ch-sun" cx="0" cy="0" r="1"><stop offset="0" stop-color="#FFE39A" stop-opacity=".95"/><stop offset=".4" stop-color="#FFEDBC" stop-opacity=".5"/><stop offset="1" stop-color="#FFF6DD" stop-opacity="0"/></radialGradient>` +
+        `<linearGradient id="ch-rayg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFE9A6" stop-opacity=".5"/><stop offset=".7" stop-color="#FFF1C8" stop-opacity=".1"/><stop offset="1" stop-color="#FFF1C8" stop-opacity="0"/></linearGradient>` +
+        `<linearGradient id="ch-f1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9D3CC"/><stop offset=".5" stop-color="#DCE2D8" stop-opacity=".7"/><stop offset="1" stop-color="#E9ECE2" stop-opacity="0"/></linearGradient>` +
+        `<linearGradient id="ch-f2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#A9B88A"/><stop offset=".6" stop-color="#C6D0AC" stop-opacity=".85"/><stop offset="1" stop-color="#DDE3CC" stop-opacity=".5"/></linearGradient>` +
+        `<linearGradient id="ch-hz" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F2F3EE" stop-opacity="0"/><stop offset=".75" stop-color="#F2F3EE" stop-opacity=".7"/><stop offset="1" stop-color="#F4F2DF" stop-opacity=".85"/></linearGradient>` +
+        `<linearGradient id="ch-dk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F4EE9A" stop-opacity=".3"/><stop offset=".22" stop-color="#8E9A3A" stop-opacity="0"/><stop offset="1" stop-color="#18230A" stop-opacity=".62"/></linearGradient>` +
+        `<linearGradient id="ch-dk2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E9E68A" stop-opacity=".22"/><stop offset=".3" stop-color="#3A4A12" stop-opacity=".1"/><stop offset="1" stop-color="#0E1705" stop-opacity=".7"/></linearGradient>` +
+        `<linearGradient id="ch-sd" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFF3A8" stop-opacity=".2"/><stop offset=".45" stop-color="#FFF3A8" stop-opacity="0"/><stop offset="1" stop-color="#14200A" stop-opacity=".3"/></linearGradient>` +
+        `<linearGradient id="ch-gs" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F6F3A6" stop-opacity="0"/><stop offset=".5" stop-color="#F6F3A6" stop-opacity=".26"/><stop offset="1" stop-color="#F6F3A6" stop-opacity="0"/></linearGradient>` +
+        `<linearGradient id="ch-tk" gradientUnits="userSpaceOnUse" x1="-22" y1="0" x2="24" y2="0"><stop offset="0" stop-color="#B9A57C"/><stop offset=".35" stop-color="#8A7450"/><stop offset=".75" stop-color="#5C4A32"/><stop offset="1" stop-color="#3E3122"/></linearGradient>` +
+        `<linearGradient id="ch-lb" gradientUnits="userSpaceOnUse" x1="0" y1="-110" x2="0" y2="-300"><stop offset="0" stop-color="#7D6846"/><stop offset=".5" stop-color="#5A4830"/><stop offset="1" stop-color="#33291B"/></linearGradient>` +
+        `<linearGradient id="ch-mb" gradientUnits="userSpaceOnUse" x1="${n(-4 * u)}" y1="${n(-6.2 * u)}" x2="${n(3 * u)}" y2="${n(-1.2 * u)}"><stop offset="0" stop-color="#F0A078"/><stop offset=".5" stop-color="#DB7B55"/><stop offset="1" stop-color="#B9583A"/></linearGradient>` +
+        `<linearGradient id="ch-clg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".55" stop-color="#FAFBFA"/><stop offset="1" stop-color="#C9D9E4"/></linearGradient>` +
+        `<linearGradient id="ch-cool" x1="1" y1="0" x2=".3" y2=".9"><stop offset="0" stop-color="#C9DCEA" stop-opacity=".9"/><stop offset=".6" stop-color="#E4ECEC" stop-opacity="0"/></linearGradient>` +
+        `<radialGradient id="ch-vg" cx=".5" cy=".42" r=".8"><stop offset=".55" stop-color="#8A8468" stop-opacity="0"/><stop offset="1" stop-color="#8A8468" stop-opacity=".2"/></radialGradient>` +
+        grassFilter('ch-g1', '.26', '.016', 3, '.13 .21 .32 .46 .66 .86', '.18 .28 .40 .54 .70 .85', '.02 .04 .07 .12 .22 .38') +
+        grassFilter('ch-g2', '.12', '.007', 9, '.12 .20 .31 .45 .62 .82', '.17 .27 .39 .52 .66 .82', '.01 .03 .06 .11 .20 .34') +
+        `<filter id="ch-mo" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".004 .016" numOctaves="2" seed="5"/><feColorMatrix values="0 0 0 0 .95 0 0 0 0 .9 0 0 0 0 .45 2.6 0 0 0 -1.05"/></filter>` +
+        `<filter id="ch-lf" x="-12%" y="-40%" width="124%" height="180%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".11" numOctaves="2" seed="7" result="a"/>` +
+        `<feDisplacementMap in="SourceGraphic" in2="a" scale="8" xChannelSelector="R" yChannelSelector="G" result="d"/>` +
+        `<feTurbulence type="fractalNoise" baseFrequency="1.1 .8" numOctaves="2" seed="4"/><feColorMatrix values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1" result="s"/>` +
+        `<feComposite in="d" in2="s" operator="arithmetic" k1="1.5" k2=".28" k3="0" k4="0"/></filter>` +
+        `<filter id="ch-bk" x="-10%" y="-5%" width="120%" height="110%" color-interpolation-filters="sRGB"><feTurbulence type="fractalNoise" baseFrequency=".35 .035" numOctaves="3" seed="12"/><feColorMatrix values="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1" result="s"/>` +
+        `<feComposite in="SourceGraphic" in2="s" operator="arithmetic" k1="1.15" k2=".42" k3="0" k4="0"/></filter>` +
+        `<filter id="ch-wc" x="-20%" y="-40%" width="140%" height="180%"><feTurbulence type="fractalNoise" baseFrequency=".012" numOctaves="3" seed="8" result="a"/><feDisplacementMap in="SourceGraphic" in2="a" scale="70" xChannelSelector="R" yChannelSelector="G"/><feGaussianBlur stdDeviation="9"/></filter>` +
+        `<filter id="ch-we" x="-5%" y="-30%" width="110%" height="160%"><feTurbulence type="fractalNoise" baseFrequency=".02" numOctaves="2" seed="3" result="a"/><feDisplacementMap in="SourceGraphic" in2="a" scale="14" xChannelSelector="R" yChannelSelector="G"/><feGaussianBlur stdDeviation="1.6"/></filter>` +
+        `<filter id="ch-b3" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="3"/></filter>` +
+        `<filter id="ch-b5" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5"/></filter>` +
+        `<filter id="ch-b8" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="8"/></filter>` +
+        `<filter id="ch-b18" x="-40%" y="-60%" width="180%" height="220%"><feGaussianBlur stdDeviation="18"/></filter>` +
+        `<filter id="ch-pp" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 .35 0 0 0 0 .33 0 0 0 0 .25 0 0 0 .9 -.28"/></filter>` +
+        `<filter id="ch-fb" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".012 .35" numOctaves="2" seed="6"/><feColorMatrix values="0 0 0 0 .5 0 0 0 0 .48 0 0 0 0 .38 0 0 0 1.1 -.5"/></filter>` +
+        `<clipPath id="ch-c1"><path d="${hill(ridge)}"/></clipPath><clipPath id="ch-c2"><path d="${hill(near)}"/></clipPath>` +
+        `<clipPath id="ch-c1b"><path d="${hill(ridge, 10)}"/></clipPath><clipPath id="ch-c2b"><path d="${hill(near, 14)}"/></clipPath>` +
+        `<filter id="ch-ed" filterUnits="userSpaceOnUse" x="-10" y="700" width="1640" height="310"><feTurbulence type="fractalNoise" baseFrequency=".4 .012" numOctaves="2" seed="14"/><feColorMatrix values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1" result="a"/><feDisplacementMap in="SourceGraphic" in2="a" scale="46" xChannelSelector="A" yChannelSelector="R"/></filter>` +
+        `<filter id="ch-ed2" filterUnits="userSpaceOnUse" x="-10" y="800" width="1640" height="210"><feTurbulence type="fractalNoise" baseFrequency=".22 .008" numOctaves="2" seed="31"/><feColorMatrix values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0 1" result="a"/><feDisplacementMap in="SourceGraphic" in2="a" scale="80" xChannelSelector="A" yChannelSelector="R"/></filter>` +
+        '</defs>'
+
+      // paper
+      let b = defs
+      b += `<rect width="${W}" height="${H}" fill="#F2F3EE"/>`
+      b += `<rect width="${W}" height="${H}" fill="url(#ch-grid)"/><rect width="${W}" height="${H}" fill="url(#ch-grid2)"/>`
+      b += `<rect width="${W}" height="${H}" filter="url(#ch-fb)" opacity=".13" style="mix-blend-mode:multiply"/>`
+      // morning light from the upper left
+      b += `<circle cx="60" cy="-40" r="1050" fill="url(#ch-sun)" style="mix-blend-mode:multiply"/><rect width="1600" height="760" fill="url(#ch-cool)"/>`
+      // watercolour clouds
+      const cloud = (x, y, s, o, d) => {
+        let e = ''
+        const cr = rng(x + y)
+        for (let i = 0; i < 9; i++) e += `<ellipse cx="${n((i - 4) * 46 * s + (cr() - 0.5) * 20)}" cy="${n(-Math.sin((i / 8) * Math.PI) * 34 * s * (0.5 + cr() * 0.7))}" rx="${n((60 + cr() * 40) * s)}" ry="${n((26 + cr() * 22) * s)}"/>`
+        return `<g class="ch-cl" style="animation-delay:${d}s"><g transform="translate(${x} ${y})" filter="url(#ch-wc)" fill="url(#ch-clg)" opacity="${o}">${e}<ellipse cx="0" cy="${n(20 * s)}" rx="${n(230 * s)}" ry="${n(16 * s)}"/></g></g>`
+      }
+      b += cloud(0, 150, 1.25, 0.85, -98) + cloud(0, 330, 0.8, 0.55, -40) + cloud(0, 80, 0.9, 0.6, -10) + cloud(0, 250, 1.05, 0.55, -134)
+      // birds, far away
+      b += `<g class="ch-bd" fill="none" stroke="#6F7066" stroke-width="1.3" stroke-linecap="round">` + [[0, 210, 0], [34, 226, -0.4], [-22, 232, -0.7], [70, 244, -0.2]].map(([x, y, d]) => `<path class="ch-bw" style="animation-delay:${d}s" d="M${x} ${y}q5 -6 9 0q4 -6 9 0"/>`).join('') + '</g>'
+
+      // far washes
+      b += `<path d="${hill(far1)}" fill="url(#ch-f1)" filter="url(#ch-we)" opacity=".9"/>`
+      let dots = ''
+      for (let i = 0; i < 26; i++) {
+        const x = 370 + r() * 1150
+        const s = 0.6 + r() * 0.9
+        dots += `<path d="M${n(x)} ${n(far2(x) + 2)}c${n(-5 * s)} ${n(-3 * s)} ${n(-4 * s)} ${n(-13 * s)} 0 ${n(-17 * s)}c${n(4 * s)} ${n(4 * s)} ${n(5 * s)} ${n(14 * s)} 0 ${n(17 * s)}"/>`
+      }
+      b += `<rect y="700" width="${W}" height="110" fill="url(#ch-hz)"/>`
+      b += `<g filter="url(#ch-we)"><path d="${hill(far2)}" fill="url(#ch-f2)"/><g fill="#92A478" opacity=".8">${dots}</g></g>`
+      b += `<rect y="745" width="${W}" height="100" fill="url(#ch-hz)" opacity=".9"/>`
+
+      // the hill: streaked grass texture, its top edge torn into blades by a static displacement
+      b += `<g filter="url(#ch-ed)"><g clip-path="url(#ch-c1)">`
+      b += `<rect x="-300" y="700" width="2200" height="420" filter="url(#ch-g1)" transform="rotate(7 800 880)"/>`
+      b += `<rect x="-300" y="700" width="2200" height="420" filter="url(#ch-g1)" transform="rotate(-11 800 880) translate(37 0)" style="mix-blend-mode:lighten" opacity=".8"/>`
+      b += `<rect y="760" width="${W}" height="240" filter="url(#ch-mo)" style="mix-blend-mode:soft-light"/>`
+      b += `<rect y="760" width="${W}" height="240" fill="url(#ch-sd)"/>`
+      b += `<path d="${hill(ridge, 46)}" fill="#141F08" opacity=".5" filter="url(#ch-b18)"/>`
+      b += `<ellipse cx="1130" cy="812" rx="330" ry="34" fill="#F2EE8E" opacity=".4" filter="url(#ch-b18)" style="mix-blend-mode:soft-light" transform="rotate(-5 1130 812)"/>`
+      b += `<path d="${line(ridge, -20, 1620, 20, 10)}" fill="none" stroke="#F1F2A0" stroke-width="22" opacity=".55" filter="url(#ch-b8)" style="mix-blend-mode:soft-light"/>`
+      b += `<g filter="url(#ch-b8)" fill="#111B07" style="mix-blend-mode:multiply"><ellipse cx="1530" cy="${n(ridge(1530) + 36)}" rx="170" ry="24" opacity=".7" transform="rotate(4 1530 800)"/><ellipse cx="1440" cy="${n(ridge(1440) + 12)}" rx="60" ry="10" opacity=".8"/></g>`
+      b += `</g></g>`
+      b += `<g clip-path="url(#ch-c1b)"><g class="ch-cs" style="animation-delay:-52s"><ellipse cx="0" cy="900" rx="330" ry="90" fill="#1B2A0C" opacity=".3" filter="url(#ch-b18)"/></g>`
+      b += `<g transform="skewX(-24)"><rect class="ch-gust" x="0" y="760" width="560" height="250" fill="url(#ch-gs)" style="mix-blend-mode:soft-light"/></g></g>`
+
+      b += tree()
+
+      // tiny life on the ridge
+      const zz = [0, 1, 2].map(i => `<text class="ch-z" style="animation-delay:${n(-i * 1.2)}s" x="${n(u * 4)}" y="${n(-u * 7.4)}" font-family="Georgia,serif" font-style="italic" font-size="${9 + i * 2}" fill="#6B6C62">z</text>`).join('')
+      b += `<g transform="translate(${napX} ${n(napY)})"><g class="ch-sl"><ellipse cx="2" cy="1" rx="${n(u * 5.4)}" ry="2.6" fill="#16200A" opacity=".5"/><g class="ch-sl-in">${critter(u, 'ch-s')}</g><g class="ch-zz">${zz}</g></g></g>`
+      b += `<g class="ch-wk"><ellipse cx="3" cy="1" rx="${n(u * 5.2)}" ry="2.4" fill="#16200A" opacity=".45"/><g class="ch-wk-in">${critter(u, 'ch-w')}</g></g>`
+
+      // blade fringe of the ridge, in front of feet and trunk
+      b += `<g fill="none" stroke-linecap="round">` + fringe(ridge, rng(5), 3.1, 6, 21, 16, ['#55671A', '#7F9029', '#AEBA49', '#DDE17E'], [1.5, 1.4, 1.2, 1.1], 'ch-sw', 3) + '</g>'
+
+      // near slope
+      b += `<g filter="url(#ch-ed2)"><g clip-path="url(#ch-c2)">`
+      b += `<rect x="-300" y="800" width="2200" height="330" filter="url(#ch-g2)" transform="rotate(-7 800 940)"/>`
+      b += `<rect x="-300" y="800" width="2200" height="330" filter="url(#ch-g2)" transform="rotate(10 800 940) translate(61 0)" style="mix-blend-mode:lighten" opacity=".8"/>`
+      b += `<rect y="850" width="${W}" height="150" filter="url(#ch-mo)" style="mix-blend-mode:soft-light"/>`
+      b += `<rect y="850" width="${W}" height="150" fill="url(#ch-dk2)"/><rect y="850" width="${W}" height="150" fill="url(#ch-sd)"/>`
+      b += `<path d="${line(near, -20, 1620, 20, 12)}" fill="none" stroke="#F1F2A0" stroke-width="24" opacity=".6" filter="url(#ch-b8)" style="mix-blend-mode:soft-light"/>`
+      b += `</g></g>`
+      b += `<g clip-path="url(#ch-c2b)"><g class="ch-cs" style="animation-delay:-49s"><ellipse cx="0" cy="980" rx="380" ry="80" fill="#1B2A0C" opacity=".3" filter="url(#ch-b18)"/></g>`
+      b += `<g transform="skewX(-24)"><rect class="ch-gust" x="80" y="850" width="600" height="160" fill="url(#ch-gs)" style="mix-blend-mode:soft-light;animation-delay:-18.1s"/></g></g>`
+      b += `<g fill="none" stroke-linecap="round">` + fringe(near, rng(9), 5.2, 10, 40, 12, ['#3B4A10', '#6B7E22', '#A2AF40', '#D3D872'], [2.1, 1.9, 1.6, 1.4], 'ch-sn', 4) + '</g>'
+      // meadow flowers
+      const fl = ['', '', '']
+      for (let i = 0; i < 120; i++) {
+        const x = 360 + r() * 1240
+        const y = Math.max(near(x), ridge(x)) + 16 + r() * r() * 130
+        if (y < 995) fl[i % 5 === 0 ? 2 : i % 2] += `M${Math.round(x)} ${Math.round(y)}h0`
+      }
+      b += `<g fill="none" stroke-linecap="round"><path d="${fl[0]}" stroke="#FBF8E0" stroke-width="3.2" opacity=".85"/><path d="${fl[1]}" stroke="#F2D862" stroke-width="3" opacity=".85"/><path d="${fl[2]}" stroke="#E8743C" stroke-width="3.6"/></g>`
+
+      // butterflies
+      const bfly = (path, col, d, dur) =>
+        `<g class="ch-bf" style="offset-path:path('${path}');animation-delay:${d}s;animation-duration:${dur}s"><g class="ch-wg" fill="${col}"><path d="M0 0q-7 -9 -9 -2q0 5 9 2zM0 0q7 -9 9 -2q0 5 -9 2z"/></g><rect x="-.6" y="-3" width="1.2" height="5" fill="#3A342A"/></g>`
+      b += bfly('M520 800c60 -50 120 10 190 -20s120 -60 180 -10s-90 60 -170 40s-150 30 -200 -10z', '#FFFDF2', -5, 26)
+      b += bfly('M1180 790c40 -40 90 -10 120 -40s80 0 60 30s-70 30 -100 20s-60 20 -80 -10z', '#F4C95A', -14, 19)
+
+      // loose leaves and pollen in the breeze
+      for (let i = 0; i < 7; i++)
+        b += `<g transform="translate(${n(1250 + r() * 260)} ${n(470 + r() * 170)})"><path class="ch-lf" style="animation-delay:${n(-r() * 13)}s;animation-duration:${n(10 + r() * 7)}s" d="M0 0q4 -4 9 0q-5 4 -9 0z" fill="${['#7C9440', '#A3B552', '#5F7A2E'][i % 3]}"/></g>`
+      for (let i = 0; i < 16; i++)
+        b += `<g transform="translate(${n(360 + r() * 1150)} ${n(640 + r() * 190)})"><circle class="ch-mt" style="animation-delay:${n(-r() * 19)}s;animation-duration:${n(14 + r() * 10)}s" r="${n(1 + r() * 1.2)}" fill="#F5E7A6"/></g>`
+
+      // blurred foreground tufts framing the corners
+      const tuft = (x0, x1, cnt, sr) => {
+        let s = ''
+        for (let i = 0; i < cnt; i++) {
+          const x = x0 + ((x1 - x0) * i) / (cnt - 1) + (sr() - 0.5) * 16
+          const h = 70 + sr() * 120
+          const l = (sr() - 0.25) * 110
+          const w = 3.5 + sr() * 3.5
+          s += `<path class="ch-fg" style="animation-delay:${n(-sr() * 6)}s" d="M${n(x - w)} 1012Q${n(x + l * 0.1)} ${n(1000 - h * 0.65)} ${n(x + l)} ${n(1000 - h)}Q${n(x + l * 0.35 + w)} ${n(1000 - h * 0.5)} ${n(x + w)} 1012Z" fill="${['#2F3D0D', '#4A5B14', '#6A7D20', '#8E9E32'][i % 4]}"/>`
+        }
+        return s
+      }
+      b += `<g filter="url(#ch-b5)">${tuft(290, 500, 17, rng(31))}${tuft(1540, 1640, 6, rng(32))}</g>`
+
+      // plate annotations, drafting ink
+      b +=
+        `<g font-family="Georgia,'Times New Roman',serif" fill="#77786E">` +
+        `<g stroke="#9A9B90" stroke-width=".8" fill="none"><circle cx="1528" cy="62" r="17"/><path d="M1528 39v6M1528 79v6M1505 62h6M1545 62h6"/><g class="ch-vane"><path d="M1515 62h24M1534 57l6 5l-6 5" stroke="#C4613F" stroke-width="1.3"/></g></g>` +
+        `<text x="1528" y="34" font-size="8" text-anchor="middle" letter-spacing="1">N</text>` +
+        `<text x="1529" y="104" font-size="9.5" text-anchor="middle" letter-spacing="2.4">PLATE 10</text>` +
+        `<text x="1528" y="121" font-size="13" text-anchor="middle" font-style="italic" fill="#4B4C44">Cypress Hill</text>` +
+        `<path d="M1452 384v-22h-12" stroke="#9A9B90" stroke-width=".8" fill="none"/><circle cx="1452" cy="386" r="1.8" fill="#9A9B90"/>` +
+        `<text x="1434" y="366" font-size="12" text-anchor="end" font-style="italic">Cupressus macrocarpa</text>` +
+        `<g fill="#F4F3E2"><text x="1568" y="952" font-size="15" text-anchor="end" font-style="italic" opacity=".95">Slight breeze · 3 mph W</text>` +
+        `<text x="1568" y="972" font-size="9.5" text-anchor="end" letter-spacing="1.8" opacity=".75">CYPRESS HILL · 10:38 AM</text></g></g>`
+      // registration crosses on the grid
+      b += `<g stroke="#B9BBB0" stroke-width=".9">` + [[1400, 200], [1400, 400], [400, 200], [600, 600]].map(([x, y]) => `<path d="M${x - 5} ${y}h10M${x} ${y - 5}v10"/>`).join('') + '</g>'
+
+      // paper tooth + grade
+      b += `<rect width="${W}" height="${H}" filter="url(#ch-pp)" opacity=".34" style="mix-blend-mode:multiply"/>`
+      b += `<rect width="${W}" height="${H}" fill="url(#ch-vg)" style="mix-blend-mode:multiply"/>`
+      return svg(css, b)
+    },
+  })
+})()
+
 ;return THEMES
 })()

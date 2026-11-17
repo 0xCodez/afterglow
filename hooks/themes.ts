@@ -26,14 +26,29 @@ export type Theme = {
 }
 
 /** A gallery palette in the shape `makeColors` reads: one mode, the one the scene is made for. */
+/** Relative luminance of a six-digit hex color, for ordering surfaces. */
+function luminance(hex: string): number {
+  const v = hex.replace('#', '')
+  const [r, g, b] = [0, 2, 4].map(i => {
+    const c = parseInt(v.slice(i, i + 2), 16) / 255
+
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  }) as [number, number, number]
+
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
 function paletteOf(g: GalleryTheme): Palette {
   const p = g.palette
+  // Desktop wants surface-0 (the page) as the darkest surface and each later one as light or lighter,
+  // in both modes, and in light mode surface-2 and surface-3 the same. The gallery lists light
+  // surfaces from lightest to darkest, so order them by luminance here.
+  const [s0, s1, s2, s3] = [p.s0, p.s1, p.s2, p.s3].sort((a, b) => luminance(a) - luminance(b)) as [string, string, string, string]
   const anchors = {
-    'surface-0': p.s0,
-    'surface-1': p.s1,
-    'surface-2': p.s2,
-    // In light mode surface-2 and surface-3 must match.
-    'surface-3': g.window === 'light' ? p.s2 : p.s3,
+    'surface-0': s0,
+    'surface-1': s1,
+    'surface-2': g.window === 'light' ? s3 : s2,
+    'surface-3': s3,
     'text-primary': p.text,
     'text-secondary': p.text2,
     'text-muted': p.muted,

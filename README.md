@@ -5,7 +5,7 @@ panels like glass and plays a hand-built animated scene behind the chat. Every s
 animated by its own CSS: no scripts, nothing loaded from the network, and it rests in a composed still
 picture when your system asks for reduced motion.
 
-This is an early preview with three themes:
+This is an early preview with four themes:
 
 - **Spec Sheet** (`spec-sheet`, dark): a cyanotype blueprint where a watercolour ticket stub swings on a
   visibly underdamped spring, with live engineering notes and dimension lines around it.
@@ -14,6 +14,9 @@ This is an early preview with three themes:
 - **Glyph Reef** (`glyph-reef`, dark): a black reef where a leopard shark, a hammerhead and a manta, all set
   in flickering glyph tiles, lap the edges of the window; an orange critter made of type peeks out of its
   diving bubble.
+- **Cypress Hill** (`cypress-hill`, light): a naturalist's gouache plate on gridded drafting paper: one
+  windy hill of painted grass, one cypress, cloud shadows crossing, and a tiny critter that walks the ridge,
+  naps under the tree and waves.
 
 More themes from the Afterglow gallery will follow.
 
