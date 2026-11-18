@@ -133,7 +133,7 @@ function registerTheme(t) {
 
 ;
 // ---- 19-spec-sheet.js
-// 19 Spec Sheet — a cyanotype engineering sheet for one small, precious object: a watercolour ticket stub
+// 19 Spec Sheet — a cyanotype engineering sheet for one small, precious object: a watercolour pass to a vibe coding session
 // that swings on an underdamped spring. Everything on the sheet describes that swing, and stays in sync with it:
 // the plotter trace, the θ readout and the sheen all run off the same damped sine.
 ;(() => {
@@ -230,28 +230,64 @@ function registerTheme(t) {
     const outline =
       `M${-hw + R} ${-hh}H${hw - R}A${R} ${R} 0 0 1 ${hw} ${-hh + R}V${DIV - NR}A${NR} ${NR} 0 0 0 ${hw} ${DIV + NR}V${hh - R}A${R} ${R} 0 0 1 ${hw - R} ${hh}` +
       `H${-hw + R}A${R} ${R} 0 0 1 ${-hw} ${hh - R}V${DIV + NR}A${NR} ${NR} 0 0 0 ${-hw} ${DIV - NR}V${-hh + R}A${R} ${R} 0 0 1 ${-hw + R} ${-hh}Z`
-    // watercolour, painted in the top half: x -76..76, y -116..10
+    // watercolour, painted in the top half: x -76..76, y -116..10 — a little terminal, the spark and the critter
+    const spark = (cx, cy, r, sw, col) => {
+      const len = [1, 0.74, 0.94, 0.7, 1, 0.78, 0.9, 0.72]
+      let d = ''
+      for (let i = 0; i < 8; i++) {
+        const a = (i * Math.PI) / 4 + 0.2
+        d += `M${cx} ${cy}L${n(cx + Math.cos(a) * r * len[i])} ${n(cy + Math.sin(a) * r * len[i])}`
+      }
+      return `<path d="${d}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"/>`
+    }
+    const CU = 4.2 // critter pixel unit
+    const CX = 15.5
+    const CY = -28.6
+    const cr = (px, py, w, h, c, k = '') =>
+      `<rect${k} x="${n(CX + px * CU)}" y="${n(CY + py * CU)}" width="${n(w * CU)}" height="${n(h * CU)}" fill="${c}"/>`
+    const critter =
+      `<ellipse cx="${n(CX + 6 * CU)}" cy="${n(CY + 6.25 * CU)}" rx="${n(5.4 * CU)}" ry="2.8" fill="#2c5a52" opacity=".5"/>` +
+      cr(2.6, 5, 1, 1.2, '#c9663f') +
+      cr(4.4, 5, 1, 1.2, '#c9663f') +
+      cr(6.6, 5, 1, 1.2, '#c9663f') +
+      cr(8.4, 5, 1, 1.2, '#c9663f') +
+      cr(0, 2, 2, 1.4, '#d97757') +
+      cr(10, 2, 2, 1.4, '#d97757') +
+      cr(2, 0, 8, 5, '#d97757') +
+      cr(2, 0, 8, 1, '#f2a988', ' opacity=".75"') +
+      cr(2, 4.1, 8, 0.9, '#a94f33', ' opacity=".55"') +
+      cr(2, 0, 0.7, 5, '#f2a988', ' opacity=".4"') +
+      cr(3.6, 1.3, 1, 1.6, '#2a2038', ' class="ss-eye"') +
+      cr(7.4, 1.3, 1, 1.6, '#2a2038', ' class="ss-eye"')
     const wc =
       `<g filter="url(#ss-wc)">` +
       `<rect x="-90" y="-130" width="180" height="150" fill="url(#ss-sky)"/>` +
-      `<circle cx="34" cy="-84" r="20" fill="#fff6d8" opacity=".55"/><circle cx="34" cy="-84" r="9.5" fill="#fff1bf"/>` +
       `<path d="M-90 -44C-70 -60-52 -62-36 -50C-22 -66 0 -70 16 -54C30 -64 52 -66 66 -52C76 -58 84 -56 92 -52V-20H-90Z" fill="#a7b6dc" opacity=".75"/>` +
-      `<path d="M-90 -34C-66 -52-40 -50-22 -38C-6 -48 14 -46 30 -38C48 -46 70 -44 92 -34V-8H-90Z" fill="#9cc08a"/>` +
-      `<path d="M-90 -26C-70 -38-46 -36-30 -28C-10 -34 6 -32 18 -26L-90 -10Z" fill="#7dab78" opacity=".85"/>` +
-      // chapel with a dome and a bell tower
-      `<path d="M-58 -30V-52H-34V-30Z" fill="#fbf0d6"/><path d="M-56 -52A10 10 0 0 1 -36 -52Z" fill="#e39a6c"/><path d="M-32 -30V-64H-24V-30Z" fill="#fff6e2"/><path d="M-34 -64L-28 -74L-22 -64Z" fill="#d9774f"/>` +
-      `<rect x="-50" y="-44" width="4" height="8" rx="2" fill="#7f9bc2"/><rect x="-42" y="-44" width="4" height="8" rx="2" fill="#7f9bc2"/>` +
-      `<path d="M-90 -24C-60 -30-30 -22 0 -26C30 -30 60 -22 92 -26V24H-90Z" fill="url(#ss-sea)"/>` +
-      `<path d="M-70 -14h34M-20 -18h26M14 -10h40M-52 -4h22M-8 0h30M40 -18h22" stroke="#d9f2ec" stroke-width="2.2" stroke-linecap="round" opacity=".8"/>` +
-      `<path d="M30 -14l8 -16v16zM26 -13h18l-3 4h-12z" fill="#fff8e6"/>` +
-      `<path d="M30 -22h8M28 -17h12M31 -12h6" stroke="#fff3c4" stroke-width="1.6" stroke-linecap="round" opacity=".85"/><path d="M-50 -86q3 -4 6 0q3 -4 6 0M-34 -78q2.5 -3.4 5 0q2.5 -3.4 5 0" fill="none" stroke="#6c7fa8" stroke-width="1.1" stroke-linecap="round"/>` +
-      // foreground garden
-      `<path d="M26 14C22 -4 34 -14 44 -8C48 -20 64 -20 66 -6C76 -12 90 -4 86 14Z" fill="#2f7f6b"/>` +
-      `<path d="M-90 14C-88 0-78 -6-70 0C-66 -10-52 -8-52 4C-44 0-38 6-40 14Z" fill="#3a8f74"/>` +
-      `<circle cx="44" cy="-2" r="5" fill="#f28b6b"/><circle cx="58" cy="-9" r="4.2" fill="#f7b7a0"/><circle cx="68" cy="1" r="4.6" fill="#f2c9a0"/><circle cx="52" cy="6" r="3.4" fill="#ffd98a"/><circle cx="-66" cy="4" r="3.6" fill="#f7b7a0"/><circle cx="-56" cy="8" r="3" fill="#f28b6b"/>` +
-      `</g>`
+      `<path d="M-90 -26C-66 -40-40 -38-22 -28C-6 -36 14 -34 30 -28C48 -34 70 -32 92 -24V4H-90Z" fill="#b5d3a0"/>` +
+      `<path d="M-90 -3C-60 -10-30 -2 0 -6C30 -10 60 -4 92 -7V24H-90Z" fill="#7dab78"/>` +
+      `<path d="M-90 14C-88 2-80 -4-72 2C-68 -6-56 -4-56 6C-50 3-44 8-46 14Z" fill="#3a8f74"/>` +
+      `<circle cx="-68" cy="5" r="3.2" fill="#f7b7a0"/><circle cx="-59" cy="8.5" r="2.6" fill="#ffd98a"/>` +
+      `</g>` +
+      `<g filter="url(#ss-wc2)">` +
+      `<rect x="-59" y="-84" width="124" height="57" rx="6" fill="#4b3f66" opacity=".38"/>` +
+      `<rect x="-62" y="-88" width="124" height="57" rx="6" fill="url(#ss-term)"/>` +
+      `<path d="M-62 -78V-82A6 6 0 0 1 -56 -88H56A6 6 0 0 1 62 -82V-78Z" fill="#3a4a88"/>` +
+      `<circle cx="-54.5" cy="-83" r="1.7" fill="#f28b6b"/><circle cx="-49" cy="-83" r="1.7" fill="#ffd98a"/><circle cx="-43.5" cy="-83" r="1.7" fill="#9cc08a"/>` +
+      `<rect x="-56.5" y="-52.5" width="113" height="16" rx="3.5" fill="#121a40" opacity=".6"/>` +
+      spark(-49, -13.5, 10, 2.6, '#e07f5c') +
+      `<circle cx="-33" cy="-22.5" r="1.3" fill="#e07f5c"/><circle cx="-64" cy="-23" r="1" fill="#e07f5c" opacity=".7"/>` +
+      critter +
+      `</g>` +
+      // crisp print over the wash
+      `<text class="ss-tt" x="0" y="-80.9" text-anchor="middle" style="font-size:4.6px;fill:#c3cdf2">~/vibes — claude</text>` +
+      spark(-53.5, -70.4, 3.3, 1, '#f5a27c') +
+      `<text class="ss-tt" x="-47" y="-68.5" style="font-weight:700">Claude Code</text>` +
+      `<circle cx="-53.5" cy="-60.4" r="1.5" fill="#8fe3b4"/><text class="ss-tt" x="-47" y="-58.5">Update(card.svg) <tspan fill="#8fe3b4" dx="2">+128</tspan> <tspan fill="#ffa797">−12</tspan></text>` +
+      `<rect x="-56.5" y="-52.5" width="113" height="16" rx="3.5" fill="none" stroke="#8b9be0" stroke-width=".8"/>` +
+      `<text class="ss-tt" x="-51" y="-42" style="font-size:7px;font-weight:600"><tspan fill="#f5a27c">&gt;</tspan> make it feel alive<tspan class="ss-cur" fill="#f5a27c">▌</tspan></text>` +
+      `<text x="-33" y="-10" transform="rotate(-3 -33 -10)" style="font:italic 8px Georgia,'Times New Roman',serif" fill="#33406e" opacity=".85">it’s alive!</text>`
     const row = (y, k, v) =>
-      `<text class="ss-tl" x="${-hw + 14}" y="${y}">${k}</text><text class="ss-tv" x="${-hw + 40}" y="${y}">${v}</text>`
+      `<text class="ss-tl" x="${-hw + 14}" y="${y}">${k}</text><text class="ss-tv" x="${-hw + 45}" y="${y}">${v}</text>`
     let barcode = ''
     let bx = -hw + 14
     while (bx < hw - 34) {
@@ -269,14 +305,18 @@ function registerTheme(t) {
       `<g clip-path="url(#ss-iclip)">${wc}<rect x="${-hw}" y="${-hh}" width="${TW}" height="34" fill="url(#ss-itop)"/></g>` +
       `<text class="ss-tw" x="${-hw + 11}" y="${-hh + 15}">ADMIT ONE</text><text class="ss-tw" x="${hw - 11}" y="${-hh + 15}" text-anchor="end">CLAUDE → CODE</text>` +
       `<path d="M${-hw + 9} ${DIV}H${hw - 9}" stroke="#bdb7a4" stroke-width="1" stroke-dasharray="1.5 3" stroke-linecap="round"/>` +
+      `<text class="ss-tl" x="${-hw + 14}" y="${DIV + 10.5}" style="fill:#5a6283;letter-spacing:1.3px">VIBE CODING SESSION</text>` +
       `<text class="ss-tl" x="${-hw + 14}" y="${DIV + 27}">No.</text>` +
-      `<text x="${-hw + 31}" y="${DIV + 30}" style="font:700 23px Georgia,'Times New Roman',serif;letter-spacing:-.4px" fill="#1c2748">0,001</text>` +
-      row(DIV + 47, 'FROM', 'CLAUDE CODE') +
-      row(DIV + 58, 'ON', 'YOUR TERMINAL') +
-      row(DIV + 69, 'AT', '19:52 · 17 NOV 2026') +
-      `<text x="${-hw + 14}" y="${DIV + 86}" transform="rotate(-2.5 ${-hw + 14} ${DIV + 86})" style="font:italic 9.5px Georgia,'Times New Roman',serif" fill="#28335a">Admit one. Thanks.</text>` +
+      `<text x="${-hw + 31}" y="${DIV + 29.5}" style="font:700 21px Georgia,'Times New Roman',serif;letter-spacing:-.4px" fill="#1c2748">0,042</text>` +
+      `<g transform="translate(41 ${DIV + 24}) rotate(-9)" opacity=".8" style="mix-blend-mode:multiply"><rect x="-21" y="-9.5" width="42" height="19" rx="2.5" fill="none" stroke="#d2553a" stroke-width="1.4"/><rect x="-18.8" y="-7.3" width="37.6" height="14.6" rx="1.2" fill="none" stroke="#d2553a" stroke-width=".5"/>` +
+      `<text x=".4" y="-.4" text-anchor="middle" style="font:700 6.6px ${mono};letter-spacing:.8px" fill="#d2553a">SHIPPED</text><path d="M-9.4 3.2l1.5 1.6l2.8 -3.2" fill="none" stroke="#d2553a" stroke-width=".9" stroke-linecap="round" stroke-linejoin="round"/><text x="-3.6" y="5.6" style="font:700 4.2px ${mono};letter-spacing:1px" fill="#d2553a">LGTM</text></g>` +
+      row(DIV + 44, 'PROMPT', '“make it feel alive”') +
+      row(DIV + 53.5, 'DIFF', '<tspan fill="#23805a">+128</tspan> <tspan fill="#c2503a">−12</tspan> · 3 FILES') +
+      row(DIV + 63, 'TESTS', '42 / 42 PASSED') +
+      row(DIV + 72.5, 'AT', '19:52 · 17 NOV 2026') +
+      `<text x="${-hw + 14}" y="${DIV + 86}" transform="rotate(-2.5 ${-hw + 14} ${DIV + 86})" style="font:italic 9.5px Georgia,'Times New Roman',serif" fill="#28335a">Admit one. Ship it.</text>` +
       `<g fill="#28335a" opacity=".8">${barcode}</g>` +
-      `<text class="ss-tl" transform="translate(${hw - 9} ${hh - 12}) rotate(-90)" style="font-size:4.6px">AFTERGLOW · SHEET 19/20</text>` +
+      `<text class="ss-tl" transform="translate(${hw - 9} ${hh - 12}) rotate(-90)" style="font-size:4.6px">SHEET 19/20</text>` +
       `<rect x="${-hw}" y="${-hh}" width="${TW}" height="${TH}" filter="url(#ss-pg)" opacity=".5" style="mix-blend-mode:multiply"/>` +
       `<rect x="${-hw}" y="${-hh}" width="${TW}" height="${TH}" fill="url(#ss-lit)"/>` +
       `<rect class="ss-sheen" x="-70" y="${-hh - 40}" width="140" height="${TH + 80}" fill="url(#ss-sheen)" transform="rotate(24)"/>` +
@@ -461,7 +501,8 @@ function registerTheme(t) {
       `.ss-note{font-size:8.5px;letter-spacing:.2px;opacity:.82}.ss-nh{fill:#eaf0ff;opacity:.6;letter-spacing:1.4px;font-size:8px}` +
       `.ss-tb1{font-size:10px;font-weight:700;fill:#f2f5ff;letter-spacing:2px}` +
       `.ss-tl{font:5.4px ${mono};letter-spacing:.7px;fill:#9aa0b2}.ss-tv{font:600 5.8px ${mono};letter-spacing:.5px;fill:#2a3558}` +
-      `.ss-tw{font:700 5.4px ${mono};letter-spacing:1.2px;fill:#fff}` +
+      `.ss-tw{font:700 5.4px ${mono};letter-spacing:1.2px;fill:#fff}.ss-tt{font:5.4px ${mono};letter-spacing:.2px;fill:#f6f0e0}` +
+      `.ss-cur{animation:ssBlink 1s steps(1) infinite}.ss-eye{transform-box:fill-box;transform-origin:center;animation:ssEye 5.2s infinite}@keyframes ssEye{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.12)}}` +
       `.ss-ants{animation:ssAnts 3s linear infinite}@keyframes ssAnts{to{stroke-dashoffset:-13}}` +
       `.ss-dots{animation:ssDots 6s linear infinite}@keyframes ssDots{to{stroke-dashoffset:-8}}` +
       `.ss-float,.ss-wob,.ss-shd,.ss-curR{transform-origin:0 ${-TH / 2 + 13}px}.ss-float{animation:ssFloat 7s ease-in-out infinite alternate;animation-delay:-2s}@keyframes ssFloat{from{transform:rotate(-.45deg)}to{transform:rotate(.45deg)}}` +
@@ -511,7 +552,9 @@ function registerTheme(t) {
       `<filter id="ss-wc" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".05" numOctaves="3" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation=".55" result="b"/>` +
       `<feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="11" result="g"/><feColorMatrix in="g" values="0 0 0 0 1  0 0 0 0 .98  0 0 0 0 .92  0 0 0 1.1 -.42" result="gw"/><feComposite in="gw" in2="b" operator="atop"/></filter>` +
       `<linearGradient id="ss-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6c9a3"/><stop offset=".3" stop-color="#fbe3c0"/><stop offset=".55" stop-color="#d7ece2"/><stop offset="1" stop-color="#bfe3dc"/></linearGradient>` +
-      `<linearGradient id="ss-sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6ccdc4"/><stop offset=".5" stop-color="#3fb5b0"/><stop offset="1" stop-color="#2a8f98"/></linearGradient>` +
+      `<linearGradient id="ss-term" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3870"/><stop offset="1" stop-color="#1a2350"/></linearGradient>` +
+      `<filter id="ss-wc2" x="-10%" y="-10%" width="120%" height="120%"><feTurbulence type="fractalNoise" baseFrequency=".09" numOctaves="2" seed="9" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="1.8" xChannelSelector="R" yChannelSelector="G" result="d"/><feGaussianBlur in="d" stdDeviation=".3" result="b"/>` +
+      `<feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" seed="11" result="g"/><feColorMatrix in="g" values="0 0 0 0 1  0 0 0 0 .98  0 0 0 0 .92  0 0 0 .32 -.17" result="gw"/><feComposite in="gw" in2="b" operator="atop"/></filter>` +
       `<linearGradient id="ss-itop" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7a5a48" stop-opacity=".42"/><stop offset="1" stop-color="#7a5a48" stop-opacity="0"/></linearGradient>` +
       `<linearGradient id="ss-paper" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fffefa"/><stop offset=".6" stop-color="#f7f6f1"/><stop offset="1" stop-color="#ece9df"/></linearGradient>` +
       `<linearGradient id="ss-edge" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".5" stop-color="#fff" stop-opacity=".2"/><stop offset="1" stop-color="#b9b29c" stop-opacity=".7"/></linearGradient>` +
@@ -571,7 +614,7 @@ function registerTheme(t) {
     title: 'Spec Sheet',
     window: 'dark',
     mascot: false,
-    blurb: 'A cyanotype spec sheet for one watercolour ticket stub, sprung and measured.',
+    blurb: 'A cyanotype spec sheet for one vibe-coding session pass, sprung and measured.',
     tags: ['blueprint', 'physics', 'ticket'],
     // Deep blueprint navy for the UI surfaces: the bright blue lives in the scene, and Desktop refuses a
     // palette whose text contrast is too low on lighter blues.
@@ -584,7 +627,7 @@ function registerTheme(t) {
 
 ;
 // ---- 05-voice-aurora.js
-// 05 Voice Aurora (fable) — a listening glow pooled along the bottom lip of a dark glass panel.
+// 05 Voice Aurora (fable) — a glow pooled along the bottom lip of a dark glass panel.
 // Built like a render: silk lobes of light (blurred body + crisp ridge), a white-hot dispersive crest,
 // fanned light shafts (color-dodge, so they only exist where there is light), an edge-lit glass rim, bokeh, grain.
 ;(() => {
@@ -593,8 +636,8 @@ function registerTheme(t) {
     title: 'Voice Aurora',
     window: 'dark',
     mascot: false,
-    blurb: 'A listening glow pools under dark glass, breathing in silk and prism light.',
-    tags: ['aurora', 'voice', 'glass'],
+    blurb: 'A glow pools under dark glass, breathing in silk and prism light.',
+    tags: ['aurora', 'glass'],
     palette: { s0: '#070708', s1: '#141416', s2: '#1C1C20', s3: '#232327', text: '#E8E8EA', text2: '#B6B6BE', muted: '#8A8A94', accent: '#B06BFF', danger: '#FF5C7A', success: '#3FCF8A', warning: '#F2B33D' },
     glass: { blur: 40, tint: '#141416', opacity: 0.55 },
     cli: { bg: '#070708', fg: '#E4E4E8', dim: '#6E6E78', claude: '#D97757', accent: '#B06BFF', border: '#2A2A2E', success: '#3FBF7A', error: '#E0457B', warning: '#F2B33D', add: '#0F2A1E', del: '#2E0F1E' },
@@ -718,13 +761,8 @@ function registerTheme(t) {
         bokeh += `<circle class="v5-bk" cx="${b[0]}" cy="${b[1]}" r="${b[2]}" fill="url(#v5-bk${i})" opacity="${b[4]}" style="animation-duration:${b[5]}s;animation-delay:-${n(R() * b[5])}s"/>`
       })
 
-      // ---- waveform bars
-      let bars = ''
-      for (let i = 0; i < 11; i++) {
-        const h = 5 + Math.pow(Math.sin(((i + 0.5) / 11) * Math.PI), 1.4) * 17
-        const d = 0.55 + ((i * 7) % 6) * 0.12
-        bars += `<rect class="v5-b" x="${n(1474 + i * 6.6)}" y="${n(922 - h / 2)}" width="2.8" height="${n(h)}" rx="1.4" style="animation-duration:${n(d)}s;animation-delay:-${n(R() * 2)}s"/>`
-      }
+      // keep the rng stream aligned (11 draws) so the shafts below are unchanged
+      for (let i = 0; i < 11; i++) R()
 
       const rimD = `M${P.x},600V${PB - P.r}a${P.r},${P.r} 0 0 0 ${P.r},${P.r}H${P.x + P.w - P.r}a${P.r},${P.r} 0 0 0 ${P.r},${-P.r}V600`
       const rimIn = `M${P.x + 7},600V${PB - P.r}a${P.r - 7},${P.r - 7} 0 0 0 ${P.r - 7},${P.r - 7}H${P.x + P.w - P.r}a${P.r - 7},${P.r - 7} 0 0 0 ${P.r - 7},${-(P.r - 7)}V600`
@@ -750,8 +788,6 @@ function registerTheme(t) {
         `<radialGradient id="v5-hot"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".25" stop-color="#FFE6F7" stop-opacity=".55"/><stop offset=".6" stop-color="#FF8FDC" stop-opacity=".16"/><stop offset="1" stop-color="#FF8FDC" stop-opacity="0"/></radialGradient>` +
         `<radialGradient id="v5-fl"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="#EAF6FF" stop-opacity=".5"/><stop offset=".6" stop-color="#9FD8FF" stop-opacity=".12"/><stop offset="1" stop-color="#9FD8FF" stop-opacity="0"/></radialGradient>` +
         `<clipPath id="v5-crc"><path d="${cBody}"/></clipPath>` +
-        `<linearGradient id="v5-bg" gradientUnits="userSpaceOnUse" x1="1474" y1="0" x2="1544" y2="0"><stop offset="0" stop-color="#FF8FDC"/><stop offset=".5" stop-color="#F4F0FF"/><stop offset="1" stop-color="#5FE0EA"/></linearGradient>` +
-        `<linearGradient id="v5-pl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".34"/><stop offset=".5" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#fff" stop-opacity=".2"/></linearGradient>` +
         `<clipPath id="v5-cp"><rect x="${P.x}" y="${P.y}" width="${P.w}" height="${P.h}" rx="${P.r}"/></clipPath>` +
         `<radialGradient id="v5-gf"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".12" stop-color="#FFE1F5" stop-opacity=".5"/><stop offset=".4" stop-color="#C48BFF" stop-opacity=".16"/><stop offset="1" stop-color="#7FB6FF" stop-opacity="0"/></radialGradient>` +
         `<filter id="v5-b5" filterUnits="userSpaceOnUse" x="-100" y="716" width="1800" height="324"><feGaussianBlur stdDeviation="5"/></filter>` +
@@ -785,11 +821,6 @@ function registerTheme(t) {
         `@keyframes v5Gh{0%{offset-distance:0%;opacity:0}3%{opacity:1}24%{opacity:1}28%,100%{offset-distance:100%;opacity:0}}` +
         // top
         `.v5-tp{animation:v5Tp 31s ease-in-out infinite alternate;animation-delay:-8s}@keyframes v5Tp{from{transform:translateX(110px);opacity:.75}to{transform:translateX(-130px);opacity:1}}` +
-        // hud
-        `.v5-b{fill:url(#v5-bg);transform-box:fill-box;transform-origin:50% 50%;animation:v5Bar ease-in-out infinite alternate}@keyframes v5Bar{from{transform:scaleY(.2)}to{transform:scaleY(1)}}` +
-        `.v5-dot{transform-box:fill-box;transform-origin:50% 50%;animation:v5Dot 2s ease-in-out infinite;animation-delay:-.6s}@keyframes v5Dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}` +
-        `.v5-halo{transform-box:fill-box;transform-origin:50% 50%;animation:v5Halo 2s ease-out infinite;animation-delay:-.6s}@keyframes v5Halo{0%{opacity:.5;transform:scale(.5)}100%{opacity:0;transform:scale(1.6)}}` +
-        `.v5-lab{font:600 9.5px ui-monospace,Menlo,Consolas,monospace;letter-spacing:.28em;fill:#9A9AA6}` +
         css
 
       const crest =
@@ -837,15 +868,6 @@ function registerTheme(t) {
       const topRim =
         `<g mask="url(#v5-tpm)" fill="none" class="v5-rp"><path d="${topD}" stroke="url(#v5-rb2)" stroke-width="14" filter="url(#v5-bt)" opacity=".55"/><path d="${topD}" stroke="url(#v5-rb1)" stroke-width="2.6" opacity=".5"/><path d="${topD}" stroke="#fff" stroke-width="1" opacity=".5"/></g>`
 
-      const hud =
-        `<g>` +
-        `<rect x="1460" y="901" width="98" height="42" rx="21" fill="#0B0B0E" fill-opacity=".62"/>` +
-        `<rect x="1460.5" y="901.5" width="97" height="41" rx="20.5" fill="none" stroke="url(#v5-pl)"/>` +
-        bars +
-        `<circle class="v5-halo" cx="1470" cy="882.5" r="8" fill="#B06BFF"/><circle class="v5-dot" cx="1470" cy="882.5" r="2.6" fill="#C48BFF"/>` +
-        `<text class="v5-lab" x="1480" y="886">LISTENING</text>` +
-        `</g>`
-
       const bodySvg =
         `<defs>${defs}</defs>` +
         `<rect width="${W}" height="${H}" fill="#050506"/>` +
@@ -863,7 +885,6 @@ function registerTheme(t) {
         `<rect x="${P.x + 0.5}" y="${P.y + 0.5}" width="${P.w - 1}" height="${P.h - 1}" rx="${P.r}" fill="none" stroke="url(#v5-hl)"/>` +
         topRim +
         rim +
-        hud +
         `<rect width="${W}" height="${H}" filter="url(#v5-gr)" opacity=".055"/>`
 
       return svg(style, bodySvg)

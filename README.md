@@ -7,10 +7,11 @@ picture when your system asks for reduced motion.
 
 This is an early preview with four themes:
 
-- **Spec Sheet** (`spec-sheet`, dark): a cyanotype blueprint where a watercolour ticket stub swings on a
+- **Spec Sheet** (`spec-sheet`, dark): a cyanotype blueprint where an "admit one" pass for a vibe-coding
+  session (a watercolour Claude Code terminal, a "SHIPPED · LGTM" stamp, the orange critter) swings on a
   visibly underdamped spring, with live engineering notes and dimension lines around it.
-- **Voice Aurora** (`voice-aurora`, dark): a listening glow pools under dark glass at the foot of the
-  window, breathing in silk and prism light, with a prismatic comet running along the glass rim.
+- **Voice Aurora** (`voice-aurora`, dark): a glow pools under dark glass at the foot of the window,
+  breathing in silk and prism light, with a prismatic comet running along the glass rim.
 - **Glyph Reef** (`glyph-reef`, dark): a black reef where a leopard shark, a hammerhead and a manta, all set
   in flickering glyph tiles, lap the edges of the window; an orange critter made of type peeks out of its
   diving bubble.
