@@ -12,7 +12,7 @@ const CHOICE = 'choice'
  * The Afterglow site: its live catalog of community themes. Empty means community themes are off and only
  * the built-in looks are offered; nothing is fetched.
  */
-const SITE = 'https://afterglow-site-ashy.vercel.app'
+const SITE = 'https://afterglow-themes.vercel.app'
 const CATALOG = 'catalog'
 /** Community themes kept for offline use, newest last; the store holds at most this many. */
 const KEPT = 'kept'
@@ -102,7 +102,7 @@ async function list($: EngineInterface): Promise<string> {
     light && `For light windows:\n${light}`,
     sharedText && `From the community:\n${sharedText}`,
     `Apply one with /${COMMAND} <name>. /${COMMAND} random picks one, /${COMMAND} off clears it.`,
-    SITE ? `Browse and make your own at ${SITE}` : '',
+    SITE ? `Browse them all at ${SITE}` : '',
   ]
     .filter(Boolean)
     .join('\n')
