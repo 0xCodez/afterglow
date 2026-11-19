@@ -74,8 +74,62 @@ export const THEMES: readonly Theme[] = GALLERY.map(g => ({
   scene: g.scene,
 }))
 
+/** A community theme as the Afterglow site serves it at /api/themes/<id>. */
+export type RemoteTheme = {
+  id: string
+  title: string
+  blurb: string
+  window: 'dark' | 'light'
+  palette: GalleryTheme['palette']
+  glass: { blur: number; tint: string; opacity: number }
+  scene: string
+  author?: string
+  updatedAt?: string
+}
+
+/** Community themes this session has loaded, from the store or the network. */
+const REMOTE = new Map<string, Theme>()
+
+/** Why a downloaded theme can't be used, or nothing. The app also refuses unsafe scenes on its own. */
+export function remoteProblem(r: unknown): string | undefined {
+  const t = r as Partial<RemoteTheme> | null
+  if (!t || typeof t !== 'object') return 'not a theme'
+  if (typeof t.id !== 'string' || !/^[a-z0-9-]{3,40}$/.test(t.id)) return 'bad id'
+  if (typeof t.title !== 'string' || typeof t.blurb !== 'string') return 'missing title or description'
+  if (t.window !== 'dark' && t.window !== 'light') return 'bad window kind'
+  if (typeof t.scene !== 'string' || t.scene.length > 131072 || !/^<svg[\s>]/i.test(t.scene.trim())) return 'bad scene'
+  if (/<script|<foreignObject|\son[a-z]+\s*=|javascript:/i.test(t.scene)) return 'unsafe scene'
+  const hex = /^#[0-9a-fA-F]{6}$/
+  const p = t.palette as Record<string, unknown> | undefined
+  if (!p || !['s0', 's1', 's2', 's3', 'text', 'text2', 'muted', 'accent', 'danger', 'success', 'warning'].every(k => typeof p[k] === 'string' && hex.test(p[k] as string))) return 'bad palette'
+  const g = t.glass
+  if (!g || typeof g.blur !== 'number' || typeof g.opacity !== 'number' || typeof g.tint !== 'string' || !hex.test(g.tint)) return 'bad glass'
+  return undefined
+}
+
+export function addRemote(r: RemoteTheme): Theme {
+  const theme: Theme = {
+    id: r.id,
+    title: r.title,
+    blurb: r.blurb,
+    window: r.window,
+    palette: paletteOf(r as unknown as GalleryTheme),
+    glass: { blur: Math.max(0, Math.min(64, r.glass.blur)), tint: r.glass.tint, opacity: Math.max(0, Math.min(1, r.glass.opacity)) },
+    scene: () => r.scene,
+  }
+  REMOTE.set(r.id, theme)
+  scenes.delete(r.id)
+  palettes.delete(r.id)
+
+  return theme
+}
+
+export function isBuiltin(id: string): boolean {
+  return THEMES.some(theme => theme.id === id)
+}
+
 export function themeOf(id: string | undefined): Theme | undefined {
-  return THEMES.find(theme => theme.id === id)
+  return THEMES.find(theme => theme.id === id) ?? (id === undefined ? undefined : REMOTE.get(id))
 }
 
 /** Finds a look by what a person typed: its id or its title, in any case, spaces or dashes. */

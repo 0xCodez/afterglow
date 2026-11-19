@@ -2,24 +2,19 @@
 
 Living backdrops for Claude Code on desktop. Each Afterglow theme repaints the whole app, frosts its
 panels like glass and plays a hand-built animated scene behind the chat. Every scene is a single SVG
-animated by its own CSS: no scripts, nothing loaded from the network, and it rests in a composed still
-picture when your system asks for reduced motion.
+animated by its own CSS: no scripts, and it rests in a composed still picture when your system asks for
+reduced motion.
 
-This is an early preview with four themes:
+Browse every theme live, try them on and make your own at **https://afterglow-site-ashy.vercel.app**.
 
-- **Spec Sheet** (`spec-sheet`, dark): a cyanotype blueprint where an "admit one" pass for a vibe-coding
-  session (a watercolour Claude Code terminal, a "SHIPPED · LGTM" stamp, the orange critter) swings on a
-  visibly underdamped spring, with live engineering notes and dimension lines around it.
-- **Voice Aurora** (`voice-aurora`, dark): a glow pools under dark glass at the foot of the window,
-  breathing in silk and prism light, with a prismatic comet running along the glass rim.
-- **Glyph Reef** (`glyph-reef`, dark): a black reef where a leopard shark, a hammerhead and a manta, all set
-  in flickering glyph tiles, lap the edges of the window; an orange critter made of type peeks out of its
-  diving bubble.
-- **Cypress Hill** (`cypress-hill`, light): a naturalist's gouache plate on gridded drafting paper: one
-  windy hill of painted grass, one cypress, cloud shadows crossing, and a tiny critter that walks the ridge,
-  naps under the tree and waves.
+## Themes
 
-More themes from the Afterglow gallery will follow.
+25 built in, and more from the community as they are approved on the site:
+
+ascii-atlas · cypress-hill · sticker-bomb · paper-trail · spec-sheet · sticker-notebook · puppet-strings ·
+green-light · heat-map · record-shop · offline-hill · glyph-reef · prism-foil · cloud-nine · repo-town ·
+sketch-kit · rubber-hose · pocket-arcade · gilded-pear · delft-harbor · departures · dithered-coast ·
+secret-files · tool-tray · voice-aurora
 
 ## Install
 
@@ -42,13 +37,28 @@ In the desktop app, where `/plugin` does not run: click **+** next to the prompt
 
 ## Use
 
-- `/afterglow` or `/afterglow list` lists the themes.
-- `/afterglow <name>` applies one, for example `/afterglow glyph-reef`. Your choice is remembered across sessions.
+- `/afterglow` or `/afterglow list` lists every theme, community ones included.
+- `/afterglow <name>` applies one, for example `/afterglow cloud-nine`. Your choice is remembered.
 - `/afterglow random` picks one at random.
+- `/afterglow refresh` reloads the community catalog.
 - `/afterglow off` clears the theme.
 
 Themes draw in the Claude Code desktop and mobile apps. The terminal and editors draw no backdrop, so
 the command only saves your choice there.
+
+## Network and storage
+
+Built-in themes need no network. For community themes the mod fetches the public catalog
+(`/api/catalog`, at most once an hour) and a theme you apply (`/api/themes/<name>`) from the Afterglow site,
+through Claude Code's own network. It sends nothing about you. It keeps your chosen theme's name, the
+catalog and up to six community themes you applied, so they work offline.
+
+## Update
+
+```
+claude plugin marketplace update afterglow
+claude plugin update afterglow@afterglow
+```
 
 ## License
 
