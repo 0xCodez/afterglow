@@ -26,7 +26,6 @@
   <a href="https://afterglow-site-ashy.vercel.app"><b>Try them live →</b></a>
   &nbsp;·&nbsp; <a href="#install">Install</a>
   &nbsp;·&nbsp; <a href="#gallery">Gallery</a>
-  &nbsp;·&nbsp; <a href="https://afterglow-site-ashy.vercel.app/create">Make your own</a>
 </p>
 
 Every scene is a single SVG animated by its own CSS: no scripts, and it rests in a composed still picture
@@ -59,7 +58,7 @@ Then put one on:
 
 ## Gallery
 
-25 built in, and more from the community as they are approved on the site. Click a preview to watch it
+25 built in. Click a preview to watch it
 move.
 
 <table>
@@ -238,11 +237,10 @@ The stills only tell half of it: every scene keeps quietly moving behind your ch
 Themes draw in the Claude Code desktop and mobile apps. The terminal and editors draw no backdrop, so
 the command only saves your choice there.
 
-## Make your own
+## Try them live
 
-Browse every theme live, try them on and make your own at
-**[afterglow-site-ashy.vercel.app/create](https://afterglow-site-ashy.vercel.app/create)**. Community themes join `/afterglow list` as
-they are approved on the site.
+Browse every theme live and try them on at
+**[afterglow-site-ashy.vercel.app](https://afterglow-site-ashy.vercel.app)**.
 
 ## Network and storage
 
